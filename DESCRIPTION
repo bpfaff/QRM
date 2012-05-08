@@ -1,0 +1,16 @@
+Package: QRM
+Version: 0.4-7
+Date: 2012-04-27
+Title: Provides R-language code to examine Quantitative Risk Management
+        concepts
+Author: Bernhard Pfaff
+Maintainer: Bernhard Pfaff <bernhard@pfaffikus.de>
+Depends: R(>= 2.10.0), gsl, Matrix, mvtnorm, numDeriv, timeSeries
+Description: This package is designed to accompany the book
+        Quantitative Risk Management: Concepts, Techniques and Tools by
+        Alexander J. McNeil, Rudiger Frey and Paul Embrechts.
+LazyData: Yes
+License: GPL (>= 2)
+Packaged: 2012-04-27 17:55:42 UTC; bp
+Repository: CRAN
+Date/Publication: 2012-04-28 09:56:14
