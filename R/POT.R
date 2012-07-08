@@ -337,11 +337,8 @@ plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = N
   maxVal <- as.numeric(max(data))
   quantVector <- seq(threshold, maxVal, 0.25)
   pG <- pGPD(quantVector-threshold, mod$par.ests["xi"], mod$par.ests["beta"]) 
-  split.screen(c(1, 1))
   plot(quantVector, pG, type = "l", log = "x", xlab = "x (log scale)", ylab = "Fu(x-u)")
-  screen(1, new = FALSE)
-  plot(mod$data, pECDF, log = "x", pch = 19, xlab = "x (log scale)", ylab= "Fu(x-u)", col = "blue")
-  close.screen(all.screens = TRUE)
+  points(mod$data, pECDF, pch = 19, col = "blue")
 }
 
 
