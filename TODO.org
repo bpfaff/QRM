@@ -1,6 +1,28 @@
 * Short term
-** document much more, using Roxygen headers
-** improve on .Rd
+** TODO document much more, using Roxygen headers
+** TODO fix critical use of switches without stops
+** TODO R files to improve on
+TODO CopulaAC.R
+TODO CopulaGauss.R
+TODO CopulaStudent.R
+TODO Correlations.R
+TODO Credit.R
+TODO Defunct.R
+TODO Gauss.R
+TODO GEV.R
+TODO GHYP.R
+TODO GIG.R
+TODO GPD.R
+DONE Gumbel.R
+TODO NH.R
+TODO PlotFunc.R
+TODO PointProcess.R
+TODO POT.R
+TODO Student.R
+TODO Utility.R
+** TODO put in improved version of QQplot
+** TODO put several R files together
+** TODO improve on .Rd
 * Mid term
-** replace as much as possible concerning copulas by proper function from package 'copula'
-** largely improve on the code quality
+** TODO replace as much as possible concerning copulas by proper function from package 'copula'
+** TODO largely improve on the code quality

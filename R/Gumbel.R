@@ -14,26 +14,35 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-## Gumbel Distribution
-pGumbel <- function(q, mu = 0, sigma = 1){
-  if(sigma <= 0) stop("Scale parameter sigma must be strictly positive!")
-  q <- (q - mu) / sigma
-  exp(-exp(-q))
+### Gumbel Distribution ########################################################
+
+## distribution function
+pGumbel <- function(q, mu = 0, sigma = 1)
+{
+  stopifnot(sigma > 0)
+  exp(-exp(-( (q-mu)/sigma )))
 }
-qGumbel <- function(p, mu = 0, sigma = 1){
-  if(sigma <= 0) stop("Scale parameter sigma must be strictly positive!")
-  if(length(p[(p > 0) & (p < 1)]) < length(p)) stop("p parameter does not represent probabilities")
+
+## quantile function
+qGumbel <- function(p, mu = 0, sigma = 1)
+{
+  stopifnot(0 < p, p < 1, sigma > 0)
   mu + sigma * (-log(-log(p)))
 }
-dGumbel <- function(x, mu = 0, sigma = 1, log = FALSE){
-  if(sigma <= 0) stop("Scale parameter sigma must be strictly positive!")
+
+## density
+dGumbel <- function(x, mu = 0, sigma = 1, log = FALSE)
+{
+  stopifnot(sigma > 0)
   q <- (x - mu) / sigma
   out <- -q - exp(-q) - log(sigma)
-  if(!(log)) out <- exp(out)
+  if(!log) out <- exp(out)
   out
 }
-rGumbel <- function(n, mu = 0, sigma = 1){
-  if(sigma <= 0) stop("Scale parameter sigma must be strictly positive!")
-  U <- runif(n)
-  qGumbel(U, mu, sigma)
+
+## random number generation
+rGumbel <- function(n, mu = 0, sigma = 1)
+{
+  stopifnot(sigma > 0)
+  qGumbel(runif(n), mu, sigma)
 }

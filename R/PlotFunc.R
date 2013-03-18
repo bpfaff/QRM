@@ -14,11 +14,12 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-##
-## Functions for plotting
-##
-## Bivariate density plot
-BiDensPlot <- function(func, xpts =  c(-2, 2), ypts = c(-2, 2), npts = 50, type = c("persp", "contour"), ...){
+### Functions for plotting #####################################################
+
+## bivariate density plot
+BiDensPlot <- function(func, xpts =  c(-2, 2), ypts = c(-2, 2), npts = 50,
+                       type = c("persp", "contour"), ...)
+{
   type <- match.arg(type)
   npts <- as.integer(npts)
   x <- seq(from = xpts[1], to = xpts[2], length.out = npts)
@@ -28,11 +29,15 @@ BiDensPlot <- function(func, xpts =  c(-2, 2), ypts = c(-2, 2), npts = 50, type 
   data <- cbind(xval, yval)
   z <- eval(func(data, ...))
   z <- matrix(z, nrow = length(x), ncol = length(y), byrow = TRUE)
-  switch(type, persp = persp(x, y, z), contour = contour(x, y, z))
-  return(invisible(list(x = x, y = y, z = z)))
+  switch(type,
+         persp = persp(x, y, z),
+         contour = contour(x, y, z))
+  invisible(list(x = x, y = y, z = z))
 }
-##
-QQplot <- function(x, a = 0.5, reference = c("normal", "exp", "student"), ...){
+
+## Q-Q plot
+QQplot <- function(x, a = 0.5, reference = c("normal", "exp", "student"), ...)
+{
   n <- length(x)
   reference <- match.arg(reference)
   plot.points <- ppoints(n, a)
@@ -43,5 +48,5 @@ QQplot <- function(x, a = 0.5, reference = c("normal", "exp", "student"), ...){
   xp <- func(plot.points,...)
   y <- sort(x)
   plot(xp, y, xlab = paste("Theoretical", reference), ylab = "Empirical")
-  return(invisible(list(x = x, y = y)))
+  invisible(list(x = x, y = y))
 }
