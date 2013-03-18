@@ -1,0 +1,6 @@
+* Short term
+** document much more, using Roxygen headers
+** improve on .Rd
+* Mid term
+** replace as much as possible concerning copulas by proper function from package 'copula'
+** largely improve on the code quality
