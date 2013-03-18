@@ -1,3 +1,19 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"), information = c("observed", "expected"), optfunc = c("optim", "nlminb"), ...){
   type <- match.arg(type)
   optfunc <- match.arg(optfunc)
@@ -6,7 +22,7 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
     stop("Enter either a threshold or the number of upper extremes")
   if(!is.na(nextremes) & !is.na(threshold))
     stop("Enter EITHER a threshold or the number of upper extremes")
-  if(is.timeSeries(data)) data <- series(data) 
+  if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   n <- length(data)
   if(!is.na(nextremes)){
@@ -150,7 +166,7 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"), extend=2, ci.p = 0.95, li
   start <- switch(RM, VaR = threshold, ES = quant)
   xp <- exp(seq(from = log(start), to = log(xmax), length = like.num))
   for(i in 1.:length(xp)){
-    optimfit2 <- optim(xihat, parloglik, excessesIn=(object$data - threshold), xpiIn=xp[i], 
+    optimfit2 <- optim(xihat, parloglik, excessesIn=(object$data - threshold), xpiIn=xp[i],
                        aIn=a, uIn=threshold, RMIn=RM, ...)
     parmax <- rbind(parmax, -parloglik(optimfit2$par, excessesIn = (object$data - threshold), xpiIn = xp[i], aIn = a, uIn = threshold, RMIn = RM))
   }
@@ -175,7 +191,7 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"), extend=2, ci.p = 0.95, li
 }
 ## ME plot
 MEplot <- function(data, omit = 3., labels = TRUE, ...){
-  if(is.timeSeries(data)) data <- series(data)   
+  if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   n <- length(data)
   myrank <- function(x, na.last = TRUE){
@@ -220,7 +236,7 @@ RiskMeasures <- function(out, p){
   es <- short(p, xihat, betahat, u, lambda)
   cbind(p, quantile = q, sfall = es)
 }
-## GPD shape varies with threshold or number of extremes. 
+## GPD shape varies with threshold or number of extremes.
 xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
                    ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...){
   if(is.timeSeries(data)) data <- series(data)
@@ -268,7 +284,7 @@ xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
   return(invisible(list(x = index, y = y, upper = u, lower = l)))
 }
 ## Hill Plot
-hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15, 
+hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
     end = NA, reverse = FALSE, p = NA, ci = 0.95, auto.scale = TRUE, labels = TRUE, ...){
   if(is.timeSeries(data)) data <- as.vector(series(data))
   data <- as.numeric(data)
@@ -336,7 +352,7 @@ plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = N
   pECDF <- edf(mod$data)
   maxVal <- as.numeric(max(data))
   quantVector <- seq(threshold, maxVal, 0.25)
-  pG <- pGPD(quantVector-threshold, mod$par.ests["xi"], mod$par.ests["beta"]) 
+  pG <- pGPD(quantVector-threshold, mod$par.ests["xi"], mod$par.ests["beta"])
   plot(quantVector, pG, type = "l", log = "x", xlab = "x (log scale)", ylab = "Fu(x-u)")
   points(mod$data, pECDF, pch = 19, col = "blue")
 }

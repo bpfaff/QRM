@@ -1,4 +1,19 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
 ##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 ## Random variates
 ##
 ## Wrapper function for AC
@@ -103,7 +118,7 @@ rFrankMix <- function(n, theta){
   tmp <- .C("frank",
             as.integer(n),
             as.double(theta),
-            res= as.double(output), 
+            res= as.double(output),
             PACKAGE="QRM")$res
     return(tmp)
 }
@@ -127,7 +142,7 @@ rcopula.Gumbel2Gp <- function(n = 1000, gpsizes = c(2, 2), theta =c(2, 3, 5)){
   innerU1 <- rcopula.gumbel(n, theta[2] / theta[1], gpsizes[1])
   innerU2 <- rcopula.gumbel(n, theta[3] / theta[1], gpsizes[2])
   U <- cbind(innerU1, innerU2)
-  Y <- matrix(Y, nrow = n, ncol = sum(gpsizes))                               
+  Y <- matrix(Y, nrow = n, ncol = sum(gpsizes))
   out <- exp( - ( - log(U) / Y)^(1 / theta[1]))
   out
 }
@@ -141,7 +156,7 @@ rcopula.GumbelNested <- function(n, theta){
     U <- runif(n)
     innerU <- rcopula.GumbelNested(n, theta[-1] / theta[1])
     U <- cbind(U, innerU)
-    Y <- matrix(Y, nrow = n, ncol = d)                               
+    Y <- matrix(Y, nrow = n, ncol = d)
     out <- exp( - ( - log(U) / Y)^(1 / theta[1]))
   }
   out
@@ -212,7 +227,7 @@ fit.AC <- function(Udata, name = c("clayton", "gumbel"), initial = 2, ...){
     fit <- nlminb(initial, negloglik, data = Udata, name = name, lower = lower, ...)
   } else {
     fit <- nlminb(initial, negloglik, data = Udata, name = name, ...)
-  } 
+  }
   theta <- fit$par
   ifelse(fit$convergence == 0, converged <- TRUE, converged <- FALSE)
   hessianmatrix <- hessian(negloglik, theta, data = Udata, name = name)

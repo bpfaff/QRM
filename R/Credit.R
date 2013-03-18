@@ -1,4 +1,19 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
 ##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 momest <- function(data, trials, limit = 10){
   out <- rep(NA, limit)
   for(k in 1:limit){
@@ -113,8 +128,8 @@ fit.binomialBeta <- function(M, m, startvals = c(2, 2), ses = FALSE, ...){
   }
   pi <- par.ests[1]/sum(par.ests)
   pi2 <- (par.ests[1] + 1) / (sum(par.ests) + 1) * pi
-  rhoY <- (pi2 - pi^2) / (pi - pi^2)       
-  list(par.ests = par.ests, par.ses = par.ses, maxloglik = loglik, converged = conv, pi = pi, pi2 = pi2, rhoY = rhoY, fit = fit)  
+  rhoY <- (pi2 - pi^2) / (pi - pi^2)
+  list(par.ests = par.ests, par.ses = par.ses, maxloglik = loglik, converged = conv, pi = pi, pi2 = pi2, rhoY = rhoY, fit = fit)
 }
 ##
 fit.binomialProbitnorm <- function(M, m, startvals = c(-1, 0.5), ...){

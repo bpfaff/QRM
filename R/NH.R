@@ -1,3 +1,19 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 ##
 fit.mNH <- function(data, symmetric = FALSE, case = c("NIG", "HYP"), kvalue = NA, nit = 2000, tol = 1e-10, ...){
   case <- match.arg(case)
@@ -59,17 +75,17 @@ fit.mNH <- function(data, symmetric = FALSE, case = c("NIG", "HYP"), kvalue = NA
   alt.pars <- list(beta = beta, alpha = alpha, delta = delta)
   list(mix.pars = mix.pars, mu = mu, Sigma = Sigma, gamma = gamma, ll.max = ll, alt.pars = alt.pars,
        mean = mean, covariance = covariance, correlation = cor)
-}   
+}
 ## Univariate NIG/HYP
 fit.NH <- function(data, case = c("NIG", "HYP"), symmetric = FALSE, se = FALSE, ...){
   case <- match.arg(case)
-  if(is.timeSeries(data)) data <- series(data) 
+  if(is.timeSeries(data)) data <- series(data)
   mu <- mean(data)
   N = length(data)
   if(N==1) stop ("only one observation in data sent to fit.nH")
   variance <- (N - 1) * var(data) / N
   ekurt <- kurtosis(data)
-  lambda <- switch(case, NIG = -1/2, HYP = 1) 
+  lambda <- switch(case, NIG = -1/2, HYP = 1)
   alpha <- sqrt(3 / (variance * ekurt))
   delta <- alpha * variance
   chi <- delta^2
@@ -79,14 +95,14 @@ fit.NH <- function(data, case = c("NIG", "HYP"), symmetric = FALSE, se = FALSE, 
     theta <- c(chi, psi, mu)
   } else {
     theta <- c(chi, psi, mu, gamma)
-  } 
+  }
   negloglik <- function(theta, datavector, symmIn, lambdaIn){
     ifelse(symmIn, gammaLocal <- 0, gammaLocal <- theta[4])
     negloglikSum <- - sum(dghyp(x = datavector, lambda = lambdaIn, chi = abs(theta[1]), psi = abs(theta[2]), mu = theta[3], gamma = gammaLocal, log = TRUE))
     return(negloglikSum)
-  } 
+  }
   optimfit <- optim(par = theta, fn = negloglik, datavector = data, symmIn = symmetric, lambdaIn = lambda, ...)
-  par.ests <- optimfit$par 
+  par.ests <- optimfit$par
   ifelse(optimfit$convergence == 0, converged <- TRUE, converged <- FALSE)
   par.ests[1] <- abs(par.ests[1])
   par.ests[2] <- abs(par.ests[2])
@@ -165,10 +181,10 @@ MCECMupdate <- function(data, mix.pars, mu, Sigma, gamma, optpars, optfunc, xiev
   xi <- 0
   if (xieval) xi <- ElogGIG(lambda - d / 2, Q + chi, psi + Offset)
   thepars <- mix.pars[optpars]
-  greek.stats <- list(delta = delta, eta = eta, xi = xi) 
+  greek.stats <- list(delta = delta, eta = eta, xi = xi)
   optimout <- optim(par = thepars, fn = optfunc, mixparams = mix.pars, greeks = greek.stats, ...)
   mix.pars[optpars] <- optimout$par
-  ifelse(optimout$convergence == 0, conv <- TRUE, conv <- FALSE) 
+  ifelse(optimout$convergence == 0, conv <- TRUE, conv <- FALSE)
   list(mix.pars = mix.pars, conv, fit = optimout)
 }
 ## MCECM
@@ -192,4 +208,4 @@ MCECM.Qfunc <- function(lambda, chi, psi, delta, eta, xi){
   }
   if((chi==0) & (lambda > 0)) stop("Variance Gamma not implemented")
   out
-}  
+}

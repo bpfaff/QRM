@@ -1,7 +1,22 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
 ##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 ## Normal Distribution
 ##
-## Random variates 
+## Random variates
 rmnorm <- function(n, mu = 0, Sigma){
   d <- dim(Sigma)[1]
   A <- t(chol(Sigma))
@@ -9,7 +24,7 @@ rmnorm <- function(n, mu = 0, Sigma){
   mu.matrix <- matrix(mu, nrow = n, ncol = d, byrow = TRUE)
   return(t(A %*% t(X)) + mu.matrix)
 }
-## Density 
+## Density
 dmnorm <- function(x, mu, Sigma, log = FALSE){
   d <- dim(x)[2]
   Q <- mahalanobis(x, mu, Sigma)
@@ -20,7 +35,7 @@ dmnorm <- function(x, mu, Sigma, log = FALSE){
     out <- exp(out)
   out
 }
-## Fitting 
+## Fitting
 fit.norm <- function(data){
   if(class(data) == "timeSeries")
     data <- series(data)
@@ -29,7 +44,7 @@ fit.norm <- function(data){
   mu <- apply(data, 2, mean)
   N = length(data)
   if(N==1) stop ("only one observation in data sent to fit.norm")
-  Sigma <- (N-1) * var(data) / N  
+  Sigma <- (N-1) * var(data) / N
   d <- dim(data)[2]
   cor <- NA
   if(d > 1.0) cor <- cov2cor(Sigma)

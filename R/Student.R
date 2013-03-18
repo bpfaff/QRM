@@ -1,7 +1,23 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 ##
 ## Student's t distribution
 ##
-## Random variates 
+## Random variates
 rmt <- function(n, df = 4, mu = 0, Sigma){
   d <- dim(Sigma)[1.]
   chi <- 2.0 * rgamma(n, shape = df/2.0)
@@ -80,8 +96,8 @@ fit.mst <- function(data, nit = 2000, tol = 1e-10, ...){
 }
 ##
 fit.st <- function(data, ...){
-  if(is.timeSeries(data)) data <- series(data) 
-  mu <- mean(data) 
+  if(is.timeSeries(data)) data <- series(data)
+  mu <- mean(data)
   m2 <- mean((data - mu)^2)
   m4 <- mean((data - mu)^4)
   nu <- 4 + (6 * m2^2) / (m4 - 3 * m2^2)
@@ -103,5 +119,5 @@ fit.st <- function(data, ...){
   names(par.ses) <- names(par.ests)
   dimnames(asymp.cov) <- list(names(par.ests), names(par.ests))
   list(converged = converged, par.ests = par.ests, par.ses = par.ses,
-       asymp.cov = asymp.cov, ll.max = loglh.max)      
+       asymp.cov = asymp.cov, ll.max = loglh.max)
 }

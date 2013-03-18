@@ -1,3 +1,19 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 ##
 ## Generalised Inverse Gaussian
 ##
@@ -54,7 +70,7 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
        out <- Delta1 * S1 + Delta2 * S2
      }
      out
-   } 
+   }
    #Local function:
    objectiveTwoParams <- function(theta, lambda, chi, psi, themode){
      if(lambda < 1) stop("lambda must be at least equal to 1 to call objectiveTwoParam\n")
@@ -73,10 +89,10 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
        out <- Delta1 * S1 + Delta2 * S2
      }
      out
-  }  
+  }
   #Call internal function:
   themode <- calcmode(lambda, chi, psi)
-  if(lambda < 1) 
+  if(lambda < 1)
   {
      lambdaLOW <- TRUE
      theta <- 0.01
@@ -93,7 +109,7 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
    if(optimout$convergence != 0){
      message <- paste(optimout$message, "Problems finding optimal s and p (use option envplot for reassurance)","\n")
      print(message)
-   }  
+   }
    xL <- calcmode(lambda, chi, psi + 2 * spar)
    xH <- calcmode(lambda, chi, psi - 2 * ppar)
    S1 <- efunc(xL, lambda, chi, psi + 2 * spar)
@@ -106,7 +122,7 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
    rpar <- k1 * Delta1
    if(envplot){
      xdat <- seq(from = 0.01, to = themode * 20, length = 1000)
-     envelope2 <- (xdat <= themode) * exp(spar * xdat) * S1 + 
+     envelope2 <- (xdat <= themode) * exp(spar * xdat) * S1 +
 			(xdat > themode) * exp( - ppar * xdat) * S2
      envelope <- (xdat <= themode) * exp(spar * xdat) * k1 + (xdat >
 			themode) * exp( - ppar * xdat) * k2
@@ -116,7 +132,7 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
      abline(v = themode)
      lines(xdat, envelope, col = 2)
      lines(xdat, envelope2, lty = 2, col = 2)
-   } 
+   }
    xsim <- rep(0, n)
    new = n
    tmp <- .C("rgig",
@@ -178,4 +194,4 @@ ElogGIG <- function(lambda, chi, psi){
     stop("Log Moment of general GIG not implemented")
   }
   out
-}  
+}

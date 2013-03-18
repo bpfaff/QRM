@@ -1,3 +1,19 @@
+## Copyright (C) 2013 Marius Hofert, Berhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
 ##
 extremalPP <- function(data, threshold = NA, nextremes = NA, ...){
   if(is.timeSeries(data)){
@@ -47,10 +63,10 @@ plot.PP <- function(x,...){
   if (class(x) != "PP") stop("Not a point process. Did you call unmark()?")
   starttime <- x$starttime
   endtime <- x$endtime
-  times <- x$times  
+  times <- x$times
   augLength <- length(times) + 1
   count <- 1:augLength
-  stepfunc <- stepfun(times, count, f = 0) 
+  stepfunc <- stepfun(times, count, f = 0)
   plot.stepfun(stepfunc, xlim = range(starttime, endtime),
                ylim = range(0, augLength), xlab = "Time",
                ylab = "N events", pch = '',
@@ -77,8 +93,8 @@ fit.POT <- function(PP, markdens = "GPD", ...){
     par.ses <- c(par.ses, mark.model$par.ses)
     names(par.ses) <- names(par.ests)
     ll.max <- ll.max + mark.model$ll.max
-  }  
-  list(par.ests = par.ests, par.ses = par.ses, ll.max = ll.max)    
+  }
+  list(par.ests = par.ests, par.ses = par.ses, ll.max = ll.max)
 }
 ##
 sePP.negloglik <- function(theta, PP, case){
@@ -105,7 +121,7 @@ sePP.negloglik <- function(theta, PP, case){
    terminsum <- (1 + delta * marks) * terminsum
    term2 <- mu * (endtime - starttime) + phi * sum(terminsum)
    out <- term2 - term1
-   out 
+   out
 }
 ##
 seMPP.negloglik <- function(theta, PP, case, markdens){
@@ -138,7 +154,7 @@ seMPP.negloglik <- function(theta, PP, case, markdens){
    terminsum <- (1 + delta * marks) * terminsum
    term2 <- mu * (endtime - starttime) + phi * sum(terminsum)
    out <- term2 - term1 - term3
-   out 
+   out
 }
 ##
 volfunction <- function(anytimes, times, marks, theta, model){
@@ -215,7 +231,7 @@ fit.sePP <- function(PP, model = c("Hawkes", "ETAS"), mark.influence = TRUE, std
   out
 }
 ##
-fit.seMPP <- function(PP, markdens = "GPD", model = c("Hawkes", "ETAS"), mark.influence = TRUE, predictable = FALSE, std.errs = FALSE, ...){ 
+fit.seMPP <- function(PP, markdens = "GPD", model = c("Hawkes", "ETAS"), mark.influence = TRUE, predictable = FALSE, std.errs = FALSE, ...){
   if (class(PP) != "MPP") stop("Not marked point process data")
   model <- match.arg(model)
   marks <- PP$marks
@@ -235,7 +251,7 @@ fit.seMPP <- function(PP, markdens = "GPD", model = c("Hawkes", "ETAS"), mark.in
   if(!(mark.model$converged)) converged <- FALSE
   if(predictable){
     nms <- names(par.ests)
-    theta <- c(par.ests, 0) 
+    theta <- c(par.ests, 0)
     fit <- nlminb(start = theta, objective = seMPP.negloglik, PP = PP, case = case, markdens = markdens, ...)
     par.ests <- fit$par
     par.ests <- abs(par.ests)
