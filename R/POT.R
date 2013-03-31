@@ -14,7 +14,12 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"), information = c("observed", "expected"), optfunc = c("optim", "nlminb"), ...){
+## TODO: return "data" are actually the exceedances, not the input data!!!
+##       => bad naming here (use 'x' for input)
+fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
+                    information = c("observed", "expected"),
+                    optfunc = c("optim", "nlminb"), ...)
+{
   type <- match.arg(type)
   optfunc <- match.arg(optfunc)
   information <- match.arg(information)
@@ -41,9 +46,7 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
     xi <- 2. - a0/(a0 - 2. * a1)
     beta <- (2. * a0 * a1)/(a0 - 2. * a1)
     par.ests <- c(xi,beta)
-    negloglik <- function(theta, ydata){
-      -sum(dGPD(ydata, theta[1], abs(theta[2]), log = TRUE))
-    }
+    negloglik <- function(theta, ydata) -sum(dGPD(ydata, theta[1], abs(theta[2]), log = TRUE))
     deriv <- function(theta, ydata){
       xi <- theta[1]
       beta <- theta[2]
@@ -107,8 +110,10 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   names(out$par.ses) <- c("xi", "beta")
   out
 }
+
 ## POT: Threshold
-findthreshold <- function(data, ne){
+findthreshold <- function(data, ne)
+{
   if(is.timeSeries(data)) data <- as.vector(series(data))
   if(!is.vector(data)) stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
   if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
@@ -118,79 +123,97 @@ findthreshold <- function(data, ne){
   indices <- pmin(indices + 1., length(thresholds))
   thresholds[indices]
 }
+
 ## Tail plot
-plotTail <- function(object, extend = 2, fineness = 1000, ...){
-  data <- as.numeric(object$data)
-  threshold <- object$threshold
-  xi <- object$par.ests[names(object$par.ests) == "xi"]
-  beta <- object$par.ests[names(object$par.ests) == "beta"]
-  xpoints <- sort(data)
-  ypoints <- ppoints(sort(data))
-  xmax <- max(xpoints) * extend
-  prob <- object$p.less.thresh
-  ypoints <- (1- prob) * (1 - ypoints)
-  x <- threshold + qGPD((0:(fineness - 1)) / fineness, xi, beta)
-  x <- pmin(x,xmax)
-  y <- pGPD(x - threshold, xi, beta)
-  y <- (1 - prob) * (1 - y)
-  plot(xpoints, ypoints, xlim = range(threshold, xmax), ylim = range(ypoints, y), xlab = "x (on log scale)", ylab = "1-F(x) (on log scale)", log = "xy", ...)
-  lines(x, y)
-  return(invisible(list(xpoints = xpoints, ypoints = ypoints, x = x, y = y)))
+## TODO: extend, fineness... ugly...
+plotTail <- function(object, extend = 2, fineness = 1000, ...)
+{
+    ## extract results from object
+    exceedance <- as.numeric(object$data) # exceedances
+    u <- object$threshold
+    xi <- object$par.ests["xi"]
+    beta <- object$par.ests["beta"]
+    ## plot() preliminaries
+    xpoints <- sort(exceedance)
+    prob <- object$p.less.thresh # empirical probability of x <= u
+    ypoints <- (1 - prob) * (1 - ppoints(xpoints)) # TODO: ppoints() only gets 1 value!!!
+    ## lines() preliminaries
+    grid <- (0:(fineness - 1)) / fineness
+    xmax <- xpoints[length(xpoints)] * extend
+    x <- pmin(u + qGPD(grid, xi, beta), xmax)
+    y <- (1 - prob) * (1 - grid)
+    ## plot
+    plot(xpoints, ypoints, xlim = range(u, xmax), ylim = range(ypoints, y),
+         ## TODO: these args should all be passed properly... (as *args* with defaults)
+         xlab = "x (on log scale)", ylab = "1-F(x) (on log scale)", log = "xy", ...)
+    lines(x, y)
+    ## return; TODO: should be just invisible()
+    invisible(list(xpoints = xpoints, ypoints = ypoints, x = x, y = y))
 }
+
 ## Risk Measures
-showRM <- function(object, alpha, RM = c("VaR", "ES"), extend=2, ci.p = 0.95, like.num = 50., ...){
-  threshold <- object$threshold
-  par.ests <- object$par.ests
-  xihat <- par.ests[names(par.ests) == "xi"]
-  betahat <- par.ests[names(par.ests) == "beta"]
-  p.less.thresh <- object$p.less.thresh
-  a <- (1 - alpha) / (1 - p.less.thresh)
-  quant <- threshold + betahat * (a^(-xihat) - 1) / xihat
-  es <- quant / (1 - xihat) + (betahat - xihat * threshold) / (1 - xihat)
-  point.est <- switch(RM, VaR = quant, ES = es)
-  plotTail(object, extend = 2)
-  abline(v = point.est)
-  xmax <- max(object$data) * extend
-  parloglik <- function(theta, excessesIn, xpiIn, aIn, uIn, RMIn){
-    xi <- theta
-    if(RMIn == "VaR") beta <- xi * (xpiIn - uIn) / (aIn^(-xi) - 1)
-    if(RMIn == "ES")  beta <- ((1 - xi) * (xpiIn - uIn))/(((aIn^( - xi) - 1) / xi) + 1)
-    if(beta <= 0){
-      out <- 1.0e17
-    } else {
-      out <- -sum(dGPD(excessesIn, xi, beta, log = TRUE))
+## TODO: needs a complete rewrite... pass args to plotTail() etc.;
+##       split computations and plotting
+showRM <- function(object, alpha, RM = c("VaR", "ES"), extend=2, ci.p = 0.95,
+                   like.num = 50., col = "gray50", ...)
+{
+    u <- object$threshold # threshold
+    par.ests <- object$par.ests
+    xihat <- par.ests["xi"]
+    betahat <- par.ests["beta"]
+    p.less.thresh <- object$p.less.thresh
+    a <- (1 - alpha) / (1 - p.less.thresh)
+    quant <- u + betahat * (a^(-xihat) - 1) / xihat
+    es <- quant / (1 - xihat) + (betahat - xihat * u) / (1 - xihat)
+    point.est <- switch(RM, VaR = quant, ES = es)
+    plotTail(object, extend = 2)
+    abline(v = point.est)
+    xmax <- max(object$data) * extend
+    parloglik <- function(theta, excessesIn, xpiIn, aIn, uIn, RMIn){
+        xi <- theta
+        if(RMIn == "VaR") beta <- xi * (xpiIn - uIn) / (aIn^(-xi) - 1)
+        if(RMIn == "ES")  beta <- ((1 - xi) * (xpiIn - uIn))/(((aIn^( - xi) - 1) / xi) + 1)
+        if(beta <= 0){
+            out <- 1.0e17
+        } else {
+            out <- -sum(dGPD(excessesIn, xi, beta, log = TRUE))
+        }
+        out
     }
+    parmax <- NULL
+    start <- switch(RM, VaR = u, ES = quant)
+    xp <- exp(seq(from = log(start), to = log(xmax), length = like.num))
+    for(i in seq_along(xp)) {
+        optimfit2 <- optim(xihat, parloglik, excessesIn=(object$data - u), xpiIn=xp[i],
+                           aIn=a, uIn=u, RMIn=RM, ...)
+        parmax <- rbind(parmax, -parloglik(optimfit2$par, excessesIn = (object$data - u), xpiIn = xp[i], aIn = a, uIn = u, RMIn = RM))
+    }
+    overallmax <-  object$ll.max
+    crit <- overallmax - qchisq(0.999, 1) / 2.
+    cond <- parmax > crit
+    xp <- xp[cond]
+    parmax <- parmax[cond]
+    aalpha <- qchisq(ci.p, 1.)
+    cond <- !is.na(xp) & !is.na(parmax)
+    smth <- spline(xp[cond], parmax[cond], n = 200.)
+    ## plot
+    par(new = TRUE)
+    plot(xp, parmax, type = "n", xlab = "", ylab = "", axes = FALSE,
+         ylim = range(overallmax, crit), xlim = range(u, xmax), log = "x")
+    axis(4, at = overallmax - qchisq(c(0.95, 0.99), 1.)/2., labels = c("95", "99"), tick = TRUE)
+    ## line
+    ## abline(h = overallmax - aalpha / 2, lty = 2, col = col) TODO this makes no sense
+    lines(smth, lty = 2., col = col)
+    ## TODO: should be invisible()
+    ci <- smth$x[smth$y > overallmax - aalpha/2.]
+    out <- c(min(ci), point.est, max(ci))
+    names(out) <- c("Lower CI", "Estimate", "Upper CI")
     out
-  }
-  parmax <- NULL
-  start <- switch(RM, VaR = threshold, ES = quant)
-  xp <- exp(seq(from = log(start), to = log(xmax), length = like.num))
-  for(i in 1.:length(xp)){
-    optimfit2 <- optim(xihat, parloglik, excessesIn=(object$data - threshold), xpiIn=xp[i],
-                       aIn=a, uIn=threshold, RMIn=RM, ...)
-    parmax <- rbind(parmax, -parloglik(optimfit2$par, excessesIn = (object$data - threshold), xpiIn = xp[i], aIn = a, uIn = threshold, RMIn = RM))
-  }
-  overallmax <-  object$ll.max
-  crit <- overallmax - qchisq(0.999, 1) / 2.
-  cond <- parmax > crit
-  xp <- xp[cond]
-  parmax <- parmax[cond]
-  par(new = TRUE)
-  plot(xp, parmax, type = "n", xlab = "", ylab = "", axes = FALSE,
-       ylim = range(overallmax, crit), xlim = range(threshold, xmax), log = "x")
-  axis(4, at = overallmax - qchisq(c(0.95, 0.99), 1.)/2., labels = c("95", "99"), tick = TRUE)
-  aalpha <- qchisq(ci.p, 1.)
-  abline(h = overallmax - aalpha / 2, lty = 2, col = 2)
-  cond <- !is.na(xp) & !is.na(parmax)
-  smth <- spline(xp[cond], parmax[cond], n = 200.)
-  lines(smth, lty = 2., col = 2.)
-  ci <- smth$x[smth$y > overallmax - aalpha/2.]
-  out <- c(min(ci), point.est, max(ci))
-  names(out) <- c("Lower CI", "Estimate", "Upper CI")
-  out
 }
+
 ## ME plot
-MEplot <- function(data, omit = 3., labels = TRUE, ...){
+MEplot <- function(data, omit = 3., labels = TRUE, ...)
+{
   if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   n <- length(data)
@@ -215,8 +238,10 @@ MEplot <- function(data, omit = 3., labels = TRUE, ...){
   if(labels) title(xlab = "Threshold", ylab = "Mean Excess")
   return(invisible(list(x = points[1.:(nl - omit)], y = y[1.:(nl - omit)])))
 }
+
 ## Risk Measures
-RiskMeasures <- function(out, p){
+RiskMeasures <- function(out, p)
+{
   u <- out$threshold
   par.ests <- out$par.ests
   xihat <- par.ests[names(par.ests) == "xi"]
@@ -236,9 +261,11 @@ RiskMeasures <- function(out, p){
   es <- short(p, xihat, betahat, u, lambda)
   cbind(p, quantile = q, sfall = es)
 }
+
 ## GPD shape varies with threshold or number of extremes.
 xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
-                   ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...){
+                   ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...)
+{
   if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   qq <- 0.
@@ -283,9 +310,11 @@ xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
   if(table) print(mat)
   return(invisible(list(x = index, y = y, upper = u, lower = l)))
 }
+
 ## Hill Plot
 hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
-    end = NA, reverse = FALSE, p = NA, ci = 0.95, auto.scale = TRUE, labels = TRUE, ...){
+    end = NA, reverse = FALSE, p = NA, ci = 0.95, auto.scale = TRUE, labels = TRUE, ...)
+{
   if(is.timeSeries(data)) data <- as.vector(series(data))
   data <- as.numeric(data)
   ordered <- rev(sort(data))
@@ -342,8 +371,10 @@ hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
   }
   return(invisible(list(x = index, y = y)))
 }
+
 ## QQ-Plot for GPD
-plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = NA){
+plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = NA)
+{
   if(is.na(nextremes) & is.na(threshold))
     stop("Enter either a threshold or the number of upper extremes")
   if(is.timeSeries(data)) data <- series(data)
