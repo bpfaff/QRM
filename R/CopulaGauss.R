@@ -14,6 +14,8 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
+## TODO: should all be deprecated -- use package 'copula'
+
 ## Random variates of Gauss Copula
 rcopula.gauss <- function(n, Sigma){
   d <- dim(Sigma)[1]

@@ -14,7 +14,42 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-## GEV Distribution
+### Gumbel Distribution ########################################################
+
+## distribution function
+pGumbel <- function(q, mu = 0, sigma = 1)
+{
+  stopifnot(sigma > 0)
+  exp(-exp(-( (q-mu)/sigma )))
+}
+
+## quantile function
+qGumbel <- function(p, mu = 0, sigma = 1)
+{
+  stopifnot(0 < p, p < 1, sigma > 0)
+  mu + sigma * (-log(-log(p)))
+}
+
+## density
+dGumbel <- function(x, mu = 0, sigma = 1, log = FALSE)
+{
+  stopifnot(sigma > 0)
+  q <- (x - mu) / sigma
+  out <- -q - exp(-q) - log(sigma)
+  if(!log) out <- exp(out)
+  out
+}
+
+## random number generation
+rGumbel <- function(n, mu = 0, sigma = 1)
+{
+  stopifnot(sigma > 0)
+  qGumbel(runif(n), mu, sigma)
+}
+
+
+## GEV distribution ############################################################
+
 pGEV <- function(q, xi, mu = 0, sigma = 1){
   x <- (q - mu) / sigma
   if (xi==0){
@@ -71,3 +106,5 @@ fit.GEV <- function(maxima, ...){
   names(out$par.ses) <- c("xi", "mu", "sigma")
   out
 }
+
+

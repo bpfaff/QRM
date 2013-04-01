@@ -25,6 +25,9 @@ equicorr <- function(d, rho){
   diag(out) <- 1
   out
 }
+
+## TODO: deprecate -- use Matrix' nearPD
+
 ## Make a matrix positive definite
 eigenmeth <- function(mat, delta = 0.001){
   decomp <- eigen(mat)
@@ -35,6 +38,9 @@ eigenmeth <- function(mat, delta = 0.001){
   D <- 1/sqrt(diag(newmat))
   diag(D) %*% newmat %*% diag(D)
 }
+
+## TODO: should be deprecated -- not useful!
+
 ## Spearman rank correlations
 Spearman <- function(data, ...){
   out <- cor(data, method = "spearman", ...)
