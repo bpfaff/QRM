@@ -13,18 +13,31 @@
 ## You should have received a copy of the GNU General Public License along with
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
+
 useDynLib(QRM)
 
-importFrom(gsl,psi)
+
+### imports ####################################################################
+
+## import
 import(Matrix)
 import(mvtnorm)
 import(numDeriv)
 import(timeSeries)
 
+## importFrom
+importFrom("gsl", psi)
+importFrom("mgcv", gam, s)
+
+
+### exports ####################################################################
+
+## S3 methods
 S3method(plot, MPP)
 S3method(plot, PP)
 S3method(plot, sePP)
 
+## exports (a bit of 'grouping' wouldn't harm here)
 export(BiDensPlot,
        cal.beta,
        cal.claytonmix,
@@ -152,3 +165,5 @@ export(BiDensPlot,
        lbeta,
        CovToCor
        )
+
+export(gamGPDfit, gamGPDboot)

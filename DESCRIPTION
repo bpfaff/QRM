@@ -4,6 +4,7 @@ Date: 2013-03-20
 Title: Provides R-language Code to Examine Quantitative Risk Management Concepts
 Authors@R: c(person("Bernhard", "Pfaff", email = "bernhard@pfaffikus.de", role = c("aut", "cre")), person("Marius", "Hofert", email = "marius.hofert@math.ethz.ch", role = "ctb"), person("Alexander", "McNeil", email = "mcneil@math.ethz.ch", role = "aut", comment = "S-Plus original (QRMlib)"), person("Scott", "Ulmann", role = "trl", comment = "First R port as package QRMlib"))
 Depends: R (>= 2.10.0), gsl, Matrix, mvtnorm, numDeriv, timeSeries
+Imports: mgcv
 Description: This package is designed to accompany the book
  Quantitative Risk Management: Concepts, Techniques and Tools by
  Alexander J. McNeil, Rudiger Frey, and Paul Embrechts.
