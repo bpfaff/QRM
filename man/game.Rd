@@ -14,11 +14,11 @@
   Davison (2005).
 }
 \usage{
-gamGPDfit(x, threshold, nexc = NULL, datvar, xiFrhs, nuFrhs,
+gamGPDfit(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
           init = fit.GPD(x[,datvar], threshold = threshold)$par.ests,
           niter = 32, include.updates = FALSE, epsxi = 1e-05, epsnu = 1e-05,
           progress = TRUE, verbose = FALSE, \dots)
-gamGPDboot(x, B, threshold, nexc = NULL, datvar, xiFrhs, nuFrhs,
+gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
            init = fit.GPD(x[,datvar], threshold = threshold)$par.ests,
            niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
            boot.progress = TRUE, progress = FALSE, verbose = FALSE, debug = FALSE, \dots)
@@ -30,7 +30,7 @@ gamGPDboot(x, B, threshold, nexc = NULL, datvar, xiFrhs, nuFrhs,
   \item{B}{number of bootstrap replications.}
   \item{threshold}{threshold of the peaks-over-threshold (POT)
     method.}
-  \item{nexc}{number of excesses. This can be used to determine}
+  \item{nextremes}{number of excesses. This can be used to determine}
   \item{datvar}{name of the data column in \code{x} which contains the
      the data to be modeled.}
   \item{xiFrhs}{right-hand side of the formula for \eqn{\xi}{xi} in
@@ -198,38 +198,6 @@ plot(years, xi.true.B, type="l", ylim=range(xi.true.B, xi.fit.B),
 points(years, xi.fit.B, type="l", col="blue")
 legend("topleft", inset=0.04, lty=1, col=c("black", "blue"),
        legend=c("true", "fitted"), bty="n")
-
-\dontrun{
-### Example 2: Comparison of (the more general) gamGPDfit() with fit.GPD() #####
-
-set.seed(17) # setting seed
-xi.true.A <- rep(0.4, length=nyears)
-xi.true.B <- rep(0.8, length=nyears)
-## generate losses for group "A"
-lossA <- unlist(lapply(1:nyears,
-                       function(y) u + rGPD(n, xi=xi.true.A[y], beta=1)))
-## generate losses for group "B"
-lossB <- unlist(lapply(1:nyears,
-                       function(y) u + rGPD(n, xi=xi.true.B[y], beta=1)))
-## build data frame
-x <- data.frame(covar=covar, time=time, value=c(lossA, lossB))
-
-## fit with fit.GPD
-fit.coles <- fit.GPD(x$value, threshold=u)$par.ests
-xi.fit.coles.A <- fit.coles$mle[3]+1*fit.coles$mle[4] # TODO
-xi.fit.coles.B <- fit.coles$mle[3]+2*fit.coles$mle[4]
-
-## fit with gamGPDfit()
-fit <- gamGPDfit(x, threshold=u, datvar="value", xiFrhs=~covar, nuFrhs=~covar,
-                 epsxi=eps, epsnu=eps)
-xi.fit <- fitted(fit$xiObj)
-xi.fit.A <- as.numeric(xi.fit[1]) # fit for group "A"
-xi.fit.B <- as.numeric(xi.fit[nyears*n+1]) # fit for group "B"
-
-## comparison
-xi.fit.A-xi.fit.coles.A
-xi.fit.B-xi.fit.coles.B
-} # dontrun
 }
 \keyword{generalized Pareto distribution}
 \keyword{distribution}

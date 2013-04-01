@@ -14,6 +14,19 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
+findthreshold <- function(data, ne)
+{
+    if(is.timeSeries(data)) data <- as.vector(series(data))
+    if(!is.vector(data))
+        stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
+    if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
+    data <- rev(sort(as.numeric(data)))
+    thresholds <- unique(data)
+    indices <- match(data[ne], thresholds)
+    indices <- pmin(indices + 1., length(thresholds))
+    thresholds[indices]
+}
+
 ## TODO: return "data" are actually the exceedances, not the input data!!!
 ##       => bad naming here (use 'x' for input)
 fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
@@ -109,19 +122,6 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   names(out$par.ests) <- c("xi", "beta")
   names(out$par.ses) <- c("xi", "beta")
   out
-}
-
-## POT: Threshold
-findthreshold <- function(data, ne)
-{
-    if(is.timeSeries(data)) data <- as.vector(series(data))
-    if(!is.vector(data)) stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
-    if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
-    data <- rev(sort(as.numeric(data)))
-    thresholds <- unique(data)
-    indices <- match(data[ne], thresholds)
-    indices <- pmin(indices + 1., length(thresholds))
-    thresholds[indices]
 }
 
 ##' @title Plot Estimated Tail Probabilities

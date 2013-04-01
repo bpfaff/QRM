@@ -233,7 +233,7 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
 ##' @param x data.frame containing the losses (all other columns are treated
 ##'        as covariates)
 ##' @param threshold POT threshold above which losses are considered
-##' @param nexc number of excesses
+##' @param nextremes number of excesses
 ##' @param datvar name of the data column which contains the data to be modeled,
 ##'        for example, the losses
 ##' @param xiFrhs right-hand side of the formula for xi in the gam() call
@@ -252,7 +252,7 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
 ##' @param ... additional arguments passed to gam() (called by gamGPDfitUp())
 ##' @return a list; see below
 ##' @author Marius Hofert
-gamGPDfit <- function(x, threshold, nexc = NULL, datvar, xiFrhs, nuFrhs,
+gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
                       init = fit.GPD(x[,datvar], threshold=threshold)$par.ests,
                       niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
                       progress = TRUE, verbose = FALSE, ...)
@@ -260,16 +260,16 @@ gamGPDfit <- function(x, threshold, nexc = NULL, datvar, xiFrhs, nuFrhs,
     ## checks
     stopifnot(is.data.frame(x), length(init)==2, niter>=1, epsxi>0, epsnu>0)
     has.threshold <- !missing(threshold)
-    has.nexc <- !is.null(nexc)
-    if(has.threshold && has.nexc)
-        warning("Only one of 'threshold' and 'nexc' is allowed -- will take 'threshold'") # both threshold and nexc given
-    if(!has.threshold && !has.nexc)
-        stop("Provide either 'threshold' or 'nexc'") # none of threshold or nexc given
+    has.nextr <- !is.null(nextremes)
+    if(has.threshold && has.nextr)
+        warning("Only one of 'threshold' and 'nextremes' is allowed -- will take 'threshold'") # both threshold and nextremes given
+    if(!has.threshold && !has.nextr)
+        stop("Provide either 'threshold' or 'nextremes'") # none of threshold or nextremes given
     dim. <- dim(x) # dimension of x
     stopifnot((n <- dim.[1])>=1, dim.[2]>=2) # there should at least be one observation (actually, quite a bit more) and one column of covariates
-    if(has.nexc){ # nexc given but no threshold
-        stopifnot(0 < nexc, nexc <= n)
-        threshold <- quantile(x[,datvar], probs=1-nexc/n, names=FALSE)
+    if(has.nextr) { # nextremes given but no threshold
+        stopifnot(0 < nextremes, nextremes <= n)
+        threshold <- quantile(x[,datvar], probs=1-nextremes/n, names=FALSE)
     } # => now we can work with threshold
 
     ## determine excesses
@@ -400,7 +400,7 @@ sample.real <- function(x, size, replace=FALSE, prob=NULL)
 ##' @param x see gamGPDfit()
 ##' @param B number of bootstrap replications
 ##' @param threshold see gamGPDfit()
-##' @param nexc see gamGPDfit()
+##' @param nextremes see gamGPDfit()
 ##' @param datvar see gamGPDfit()
 ##' @param xiFrhs see gamGPDfit()
 ##' @param nuFrhs see gamGPDfit()
@@ -418,7 +418,7 @@ sample.real <- function(x, size, replace=FALSE, prob=NULL)
 ##'         as returned by gamGPDfit(); the other components contain similar
 ##'         objects based on the B bootstrap replications.
 ##' @author Marius Hofert
-gamGPDboot <- function(x, B, threshold, nexc=NULL, datvar, xiFrhs, nuFrhs,
+gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                        init=fit.GPD(x[,datvar], threshold=threshold)$par.ests,
                        niter=32, include.updates=FALSE, epsxi=1e-5, epsnu=1e-5,
                        boot.progress=TRUE, progress=FALSE, verbose=FALSE,
@@ -433,7 +433,7 @@ gamGPDboot <- function(x, B, threshold, nexc=NULL, datvar, xiFrhs, nuFrhs,
     }
 
     ## (major) fit using gamGPDfit()
-    fit <- gamGPDfit(x=x, threshold=threshold, nexc=nexc, datvar=datvar,
+    fit <- gamGPDfit(x=x, threshold=threshold, nextremes=nextremes, datvar=datvar,
                      xiFrhs=xiFrhs, nuFrhs=nuFrhs, init=init, niter=niter,
                      include.updates=include.updates, epsxi=epsxi, epsnu=epsnu,
                      progress=if(!boot.progress) FALSE else progress,
@@ -469,9 +469,9 @@ gamGPDboot <- function(x, B, threshold, nexc=NULL, datvar, xiFrhs, nuFrhs,
 
         ## call gamGPDfit()
         ## note: threshold=0 => we discard those excesses which are equal to 0
-        bfitobj <- gamGPDfit(x=x., threshold=0, nexc=nexc, datvar="y",
+        bfitobj <- gamGPDfit(x=x., threshold=0, nextremes=nextremes, datvar="y",
                              xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                             init=fit.GPD(x[,datvar], threshold=0)$par.ests,
+                             init=init, # the same here due to run time and as fit.GPD() is quite buggy
                              niter=niter, include.updates=include.updates,
                              epsxi=epsxi, epsnu=epsnu,
                              progress=if(!boot.progress) FALSE else progress,

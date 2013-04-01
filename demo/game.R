@@ -42,7 +42,6 @@ eps <- 0.005 # epsilon to determine convergence (speed up calculations)
 niter <- 32 # maximal number of iterations (speed up calculations)
 alpha <- 0.999 # confidence level
 a <- 0.05 # significance level for confidence intervals
-doPDF <- FALSE # whether graphics are saved as .pdf
 
 ## choose xi and beta depending on year and group
 xi <- cbind(A   = seq(0.4, 0.6, length = nyrs),
@@ -193,11 +192,6 @@ lamPred <- get.lambda.predict(modlam, alpha=a)
 xlim <- range(yrs)
 ylim <- c(min(lamPred$CI.low, x.num$num), max(lamPred$CI.up, x.num$num))
 
-## setup
-if(doPDF){
-    file <- "game-demo_fit_lambda.pdf" # outfile name
-    pdf(file=file, width=9, height=5) # open pdf device
-}
 ## layout
 layout.mat <- matrix(1:ngrp, ncol=ngrp, byrow=TRUE) # plot matrix layout
 layout.mat <- rbind(layout.mat, c(ngrp+1, ngrp+2)) # add plot regions for x axis label
@@ -241,7 +235,6 @@ text(0.1, 0.5, srt=90,
      labels=substitute(hat(lambda)~~"with pointwise asymptotic two-sided "*a.*"% confidence intervals", list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
-if(doPDF) dev.off()
 
 
 ### 4.2) GPD parameters xi and beta ############################################
@@ -276,11 +269,6 @@ xlim <- range(yrs)
 ylim <- c(min(xibetaFit$xi$CI.low, xi), max(xibetaFit$xi$CI.up, xi))
 whiskex <- 0.3 # whisker extension
 
-## setup
-if(doPDF){
-    file <- "game-demo_fit_xi.pdf" # outfile name
-    pdf(file=file, width=9, height=5) # open pdf device
-}
 ## layout
 layout.mat <- matrix(1:ngrp, ncol=ngrp, byrow=TRUE) # plot matrix layout
 layout.mat <- rbind(layout.mat, c(ngrp+1, ngrp+2)) # add plot regions for x axis label
@@ -328,7 +316,6 @@ text(0.1, 0.5, srt=90,
      labels=substitute(hat(xi)~~"with bootstrapped pointwise two-sided "*a.*"% confidence intervals", list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
-if(doPDF) dev.off()
 
 
 ### 4.2.3) Plot fitted and predicted beta and CIs ##############################
@@ -337,11 +324,6 @@ if(doPDF) dev.off()
 xlim <- range(yrs)
 ylim <- c(min(xibetaFit$beta$CI.low, beta), max(xibetaFit$beta$CI.up, beta))
 
-## setup
-if(doPDF){
-    file <- "game-demo_fit_beta.pdf" # outfile name
-    pdf(file=file, width=9, height=5) # open pdf device
-}
 ## layout
 layout.mat <- matrix(1:ngrp, ncol=ngrp, byrow=TRUE) # plot matrix layout
 layout.mat <- rbind(layout.mat, c(ngrp+1, ngrp+2)) # add plot regions for x axis label
@@ -389,7 +371,6 @@ text(0.1, 0.5, srt=90,
      labels=substitute(hat(beta)~~"with bootstrapped pointwise two-sided "*a.*"% confidence intervals", list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
-if(doPDF) dev.off()
 
 
 ### 5) VaR #####################################################################
@@ -456,11 +437,6 @@ stopifnot(VaR.fit$CI.low < VaR.fit$fit & VaR.fit$fit < VaR.fit$CI.up)
 xlim <- range(yrs)
 ylim <- c(min(VaR.fit$CI.low), max(VaR.fit$CI.up))
 
-## setup
-if(doPDF){
-    file <- "game-demo_fit_VaR.pdf" # outfile name
-    pdf(file=file, width=9, height=5) # open pdf device
-}
 ## layout
 layout.mat <- matrix(1:ngrp, ncol=ngrp, byrow=TRUE) # plot matrix layout
 layout.mat <- rbind(layout.mat, c(ngrp+1, ngrp+2)) # add plot regions for x axis label
@@ -510,6 +486,5 @@ text(0.1, 0.5, srt=90,
      labels=substitute(widehat(VaR)[a.]~~"with bootstrapped ptw. two-sided "*b*"% confidence intervals", list(a.=alpha, b=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
-if(doPDF) dev.off()
 
 
