@@ -26,6 +26,7 @@ pGPD <- function(q, xi, beta = 1){
   if(xi < 0) out[x > -1 / xi] <- 1
   out
 }
+
 qGPD <- function(p, xi, beta = 1){
   if(xi == 0){
     out <- qexp(p)
@@ -36,20 +37,18 @@ qGPD <- function(p, xi, beta = 1){
   }
   beta * out
 }
-rGPD <- function(n, xi, beta = 1){
-    U <- runif(n)
-    qGPD(U, xi, beta)
-}
+
+rGPD <- function(n, xi, beta = 1) qGPD(runif(n), xi, beta)
+
 dGPD <- function(x, xi, beta = 1, log = FALSE){
-  xx <- x / beta
-  if(xi == 0){
-    out <- log(dexp(xx)) - log(beta)
-  } else {
-    out <- rep(-Inf, length(x))
-    cond <- (xx > 0)
-    if (xi < 0) cond <- cond & (xx < 1 / abs(xi))
-    out[cond] <- (-1 / xi-1) * log(1 + xi * xx[cond]) - log(beta)
+    xb <- x / beta
+    res <- if(xi == 0){
+        log(dexp(xb)) - log(beta)
+    } else {
+        ind <- if(xi < 0) xb > 0 & (xb < 1 / abs(xi)) else xb > 0
+        r <- rep(-Inf, length(x))
+        r[ind] <- (-1 / xi-1) * log(1 + xi * xb[ind]) - log(beta)
+        r
     }
-    if(!log) out <- exp(out)
-    out
+    if(log) res else exp(res)
 }

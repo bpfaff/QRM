@@ -20,9 +20,15 @@
 
 \usage{
 fit.GPD(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
-        information = c("observed", "expected"), optfunc = c("optim", "nlminb"), ...)
+        information = c("observed", "expected"),
+        optfunc = c("optim", "nlminb"), ...)
+plotTail(object, ppoints.gpd = ppoints(256), main = "Estimated tail probabilities",
+         xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)), ...)
+showRM(object, alpha, RM = c("VaR", "ES"),
+       like.num = 64, ppoints.gpd = ppoints(256),
+       xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
+       legend.pos = "topright", ...)
 findthreshold(data, ne)
-plotTail(object, extend = 2, fineness = 1000, ...)
 MEplot(data, omit = 3, labels=TRUE, ...)
 xiplot(data, models = 30., start = 15., end = 500., reverse = TRUE,
        ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...)
@@ -30,8 +36,6 @@ hillPlot(data, option = c("alpha", "xi", "quantile"), start = 15,
          end = NA, reverse = FALSE, p = NA, ci = 0.95,
          auto.scale = TRUE, labels = TRUE, ...)
 plotFittedGPDvsEmpiricalExcesses(data, threshold = NA, nextremes = NA)
-showRM(object, alpha, RM = c("VaR", "ES"), extend = 2, ci.p = 0.95,
-       like.num = 50., col = "gray50", ...)
 RiskMeasures(out, p)
 }
 
@@ -41,13 +45,11 @@ RiskMeasures(out, p)
     scaled.}
   \item{ci}{\code{numeric}, probability for asymptotic confidence
     bands.}
-  \item{ci.p}{\code{numeric}, confidence levels.}
   \item{data}{\code{numeric}, data vector or timesSeries.}
   \item{end}{\code{integer}, maximum number of exceedances to be
     considered.}
-  \item{extend}{\code{numeric}, extension of plotting range.}
-  \item{fineness}{\code{integer}, count of points at which to evaluate
-    the tail estimate.}
+  \item{ppoints.gpd}{points in (0,1) for evaluating the GPD tail estimate.}
+  \item{main,xlab,ylab}{title, x axis and y axis labels.}
   \item{information}{\code{character}, whether standard errors should be
     calculated with \dQuote{observed} or \dQuote{expected}
     information. This only applies to maximum likelihood type; for
@@ -76,7 +78,7 @@ RiskMeasures(out, p)
     considered.}
   \item{table}{\code{logical}, printing of a result table.}
   \item{threshold}{\code{numeric}, threshold value.}
-  \item{col}{color for the risk measure estimate and confidence intervals.}
+  \item{legend.pos}{if not \code{\link{NULL}}, position of \code{\link{legend}()}.}
   \item{...}{ellpsis, arguments are passed down to either \code{plot()}
     or \code{optim()} or \code{nlminb()}.}
 }
@@ -118,15 +120,16 @@ xiplot(danish)
 hillPlot(danish, option = "alpha", start = 5, end = 250, p = 0.99)
 hillPlot(danish, option = "alpha", start = 5, end = 60, p = 0.99)
 plotFittedGPDvsEmpiricalExcesses(danish, nextremes = 109)
-plotFittedGPDvsEmpiricalExcesses(danish, threshold = 10)
+u <- quantile(danish, probs=0.9, names=FALSE)
+plotFittedGPDvsEmpiricalExcesses(danish, threshold = u)
 findthreshold(danish, 50)
-mod1 <- fit.GPD(danish, threshold = 10)
+mod1 <- fit.GPD(danish, threshold = u)
 RiskMeasures(mod1, c(0.95, 0.99))
 plotTail(mod1)
-showRM(mod1, 0.99, RM = "VaR", method = "BFGS")
-showRM(mod1, 0.99, RM = "ES", method = "BFGS")
-mod2 <- fit.GPD(danish, threshold = 10, type = "pwm")
-mod3 <- fit.GPD(danish, threshold = 10, optfunc = "nlminb")
+showRM(mod1, alpha = 0.99, RM = "VaR", method = "BFGS")
+showRM(mod1, alpha = 0.99, RM = "ES", method = "BFGS")
+mod2 <- fit.GPD(danish, threshold = u, type = "pwm")
+mod3 <- fit.GPD(danish, threshold = u, optfunc = "nlminb")
 }
 
 \keyword{distributions}

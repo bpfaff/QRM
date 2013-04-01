@@ -102,7 +102,7 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   }
   par.ses <- sqrt(diag(varcov))
   p.less.thresh <- 1. - Nu / n
-  out <- list(n = length(data), data = exceedances, threshold = threshold,
+  out <- list(n = length(data), data = exceedances, threshold = threshold, # TODO: data are exceedances! not original data! confusing...
               p.less.thresh = p.less.thresh, n.exceed = Nu, type = type,
               par.ests = par.ests, par.ses = par.ses, varcov = varcov,
               information = information, converged = converged, ll.max = ll.max)
@@ -114,101 +114,162 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
 ## POT: Threshold
 findthreshold <- function(data, ne)
 {
-  if(is.timeSeries(data)) data <- as.vector(series(data))
-  if(!is.vector(data)) stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
-  if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
-  data <- rev(sort(as.numeric(data)))
-  thresholds <- unique(data)
-  indices <- match(data[ne], thresholds)
-  indices <- pmin(indices + 1., length(thresholds))
-  thresholds[indices]
+    if(is.timeSeries(data)) data <- as.vector(series(data))
+    if(!is.vector(data)) stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
+    if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
+    data <- rev(sort(as.numeric(data)))
+    thresholds <- unique(data)
+    indices <- match(data[ne], thresholds)
+    indices <- pmin(indices + 1., length(thresholds))
+    thresholds[indices]
 }
 
-## Tail plot
-## TODO: extend, fineness... ugly...
-plotTail <- function(object, extend = 2, fineness = 1000, ...)
+##' @title Plot Estimated Tail Probabilities
+##' @param object object as returned by fit.GPD()
+##' @param ppoints.gpd (p)points in (0,1) for evaluating GPD tail estimate
+##' @param xlab x axis label
+##' @param ylab y axis label
+##' @param ... additional arguments passed to plot()
+##' @return invisible()
+##' @author Marius Hofert
+plotTail <- function(object, ppoints.gpd = ppoints(256),
+                     main = "Estimated tail probabilities",
+                     xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)), ...)
 {
+    ## checks
+    stopifnot(0 < ppoints.gpd, ppoints.gpd < 1)
+
     ## extract results from object
-    exceedance <- as.numeric(object$data) # exceedances
-    u <- object$threshold
-    xi <- object$par.ests["xi"]
-    beta <- object$par.ests["beta"]
-    ## plot() preliminaries
-    xpoints <- sort(exceedance)
-    prob <- object$p.less.thresh # empirical probability of x <= u
-    ypoints <- (1 - prob) * (1 - ppoints(xpoints)) # TODO: ppoints() only gets 1 value!!!
-    ## lines() preliminaries
-    grid <- (0:(fineness - 1)) / fineness
-    xmax <- xpoints[length(xpoints)] * extend
-    x <- pmin(u + qGPD(grid, xi, beta), xmax)
-    y <- (1 - prob) * (1 - grid)
+    exceedance <- object$data # exceedances
+    u <- object$threshold # threshold
+    xi.hat <- object$par.ests["xi"] # xi estimate
+    beta.hat <- object$par.ests["beta"] # beta estimate
+
+    ## compute empirical tail estimator
+    ## Note: Let X be a loss and Y an excess over u (Y = X - u for X > u)
+    ##       Then EKM (1997, (6.42)) says \bar{F}(u+y) = \bar{F}(u) * \bar{F}_u(y).
+    ##       With estimators: \hat{\bar{F}}_n(u+y) = (Nu/n) * \hat{\bar{F}}_{u,n}(y)
+    ##       If y are *sorted* excesses then u+y = sorted_exceedance and hence
+    ##       \hat{\bar{F}}_n(sorted_exceedance) =  (Nu/n) * \hat{\bar{F}}_{u,n}(sorted_excess)
+    ##                                          =  (Nu/n) * (Nu:1)/Nu
+    ##                                          ~= (Nu/n) * rev(ppoints(Nu))
+    Nu <- length(exceedance) # number of exceedances
+    X. <- sort(exceedance) # sorted exceedances (sorted X which are > u)
+    Nu.n <- 1 - object$p.less.thresh # empirical probability of (exceedances) x > u = Nu/n
+    Fnbar.hat.X. <- Nu.n * rev(ppoints(Nu)) # \hat{\bar{F}}_n(X.) where \hat{F}_n is based on *all* data (standard edf)
+
+    ## compute GPD tail estimator
+    ## Note: As before, \hat{\bar{F}}_n(u+y) ~= (Nu/n) * rev(ppoints(Nu))
+    ##       By the GPD approxi, the left-hand side equals
+    ##       (Nu/n) * (1-F_{GPD(xi.hat,beta.hat)}(y))
+    ##       Solving for y leads y ~= F_{GPD(xi.hat,beta.hat)}^{-1}(1-rev(ppoints(Nu)))
+    ##                              = F_{GPD(xi.hat,beta.hat)}^{-1}(ppoints(Nu))
+    ##       => sorted_exceedance = u+y = u + F_{GPD(xi.hat,beta.hat)}^{-1}(ppoints(Nu))
+    x.gpd.est <- u + qGPD(ppoints.gpd, xi.hat, beta.hat) # 'sorted_exceedance'
+    y.gpd.est <- Nu.n * rev(ppoints.gpd) # as before
+
     ## plot
-    plot(xpoints, ypoints, xlim = range(u, xmax), ylim = range(ypoints, y),
-         ## TODO: these args should all be passed properly... (as *args* with defaults)
-         xlab = "x (on log scale)", ylab = "1-F(x) (on log scale)", log = "xy", ...)
-    lines(x, y)
-    ## return; TODO: should be just invisible()
-    invisible(list(xpoints = xpoints, ypoints = ypoints, x = x, y = y))
+    xlim. <- range(X., x.gpd.est)
+    ## xlim. = range(object$data, x.gpd.est)
+    ##       = range(object$data, u + qGPD(ppoints.gpd, xi.hat, beta.hat)) # => important for showRM()
+    ylim. <- range(Fnbar.hat.X., y.gpd.est) # y range
+    plot(X., Fnbar.hat.X., xlim = xlim., ylim = ylim., # make sure everything is visible
+         log = "xy", main = main, xlab = xlab, ylab = ylab, ...) # plot emp. tail estimator
+    lines(x.gpd.est, y.gpd.est) # add GPD tail estimator
+
+    ## return
+    invisible()
 }
 
-## Risk Measures
-## TODO: needs a complete rewrite... pass args to plotTail() etc.;
-##       split computations and plotting
-showRM <- function(object, alpha, RM = c("VaR", "ES"), extend=2, ci.p = 0.95,
-                   like.num = 50., col = "gray50", ...)
+##' @title Plot Estimated Tail Probabilities with Risk Measure Estimates and CIs
+##' @param object object as returned by fit.GPD()
+##' @param alpha RM 'confidence' level (e.g., 0.999)
+##' @param RM risk measure (character string)
+##' @param like.num number of likelihood evaluation points for CIs
+##' @param ppoints.gpd (p)points in (0,1) for evaluating GPD tail estimate
+##' @param xlab x axis label
+##' @param ylab y axis label
+##' @param legend.pos position as accepted by legend() or NULL (no legend)
+##' @param ... additional arguments passed to plot()
+##' @return invisible()
+##' @author Marius Hofert
+##' TODO: we should use optimize(), improve on nLL(), and use ... for plot!
+showRM <- function(object, alpha, RM = c("VaR", "ES"),
+                   like.num = 64, ppoints.gpd = ppoints(256),
+                   xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
+                   legend.pos = "topright", ...)
 {
+    ## checks
+    stopifnot(0 < alpha, alpha < 1, like.num > 0)
+
+    ## extract results from object
+    exceedance <- object$data # exceedances
     u <- object$threshold # threshold
-    par.ests <- object$par.ests
-    xihat <- par.ests["xi"]
-    betahat <- par.ests["beta"]
-    p.less.thresh <- object$p.less.thresh
-    a <- (1 - alpha) / (1 - p.less.thresh)
-    quant <- u + betahat * (a^(-xihat) - 1) / xihat
-    es <- quant / (1 - xihat) + (betahat - xihat * u) / (1 - xihat)
-    point.est <- switch(RM, VaR = quant, ES = es)
-    plotTail(object, extend = 2)
-    abline(v = point.est)
-    xmax <- max(object$data) * extend
-    parloglik <- function(theta, excessesIn, xpiIn, aIn, uIn, RMIn){
-        xi <- theta
-        if(RMIn == "VaR") beta <- xi * (xpiIn - uIn) / (aIn^(-xi) - 1)
-        if(RMIn == "ES")  beta <- ((1 - xi) * (xpiIn - uIn))/(((aIn^( - xi) - 1) / xi) + 1)
-        if(beta <= 0){
-            out <- 1.0e17
-        } else {
-            out <- -sum(dGPD(excessesIn, xi, beta, log = TRUE))
-        }
-        out
+    xi.hat <- object$par.ests["xi"] # xi estimate
+    beta.hat <- object$par.ests["beta"] # beta estimate
+    Nu.n <- 1-object$p.less.thresh # empirical probability of (exceedances) x > u = Nu/n
+
+    ## risk measure estimates
+    a <- (1 - alpha) / Nu.n
+    VaR <- u + beta.hat * (a^(-xi.hat) - 1) / xi.hat
+    ES <- VaR / (1 - xi.hat) + (beta.hat - xi.hat * u) / (1 - xi.hat)
+    RM <- match.arg(RM)
+    RM.hat <- switch(RM,
+                     "VaR" = VaR,
+                     "ES" = ES,
+                     stop("wrong argument 'RM'")) # risk measure estimate
+
+    ## x values for CI evaluation
+    start <- switch(RM,
+                    "VaR" = u,
+                    "ES" = VaR,
+                    stop("wrong argument 'RM'"))
+    xlim.plotTail <- range(exceedance, u + qGPD(ppoints.gpd, xi=xi.hat, beta=beta.hat)) # x range (as for plotTail()!)
+    x <- exp(seq(log(start), log(xlim.plotTail[2]), length=like.num)) # x values where the evaluate likelihood based confidence intervals
+
+    ## computing CIs
+    nLL <- function(th, x) { # th = running xi; x = x-values where the evaluate CIs
+        beta <- switch(RM,
+                     "VaR" = th * (x - u) / (a^(-th) - 1),
+                     "ES" = ((1 - th) * (x - u)) / (((a^( - th) - 1) / th) + 1),
+                     stop("wrong argument 'RM'"))
+        if(beta <= 0) 1e17 # dGPD() not defined there since log(beta)... but optim() needs finite initial value
+        else -sum(dGPD(exceedance-u, th, beta, log=TRUE)) # -log-likelihood
     }
-    parmax <- NULL
-    start <- switch(RM, VaR = u, ES = quant)
-    xp <- exp(seq(from = log(start), to = log(xmax), length = like.num))
-    for(i in seq_along(xp)) {
-        optimfit2 <- optim(xihat, parloglik, excessesIn=(object$data - u), xpiIn=xp[i],
-                           aIn=a, uIn=u, RMIn=RM, ...)
-        parmax <- rbind(parmax, -parloglik(optimfit2$par, excessesIn = (object$data - u), xpiIn = xp[i], aIn = a, uIn = u, RMIn = RM))
-    }
-    overallmax <-  object$ll.max
-    crit <- overallmax - qchisq(0.999, 1) / 2.
-    cond <- parmax > crit
-    xp <- xp[cond]
-    parmax <- parmax[cond]
-    aalpha <- qchisq(ci.p, 1.)
-    cond <- !is.na(xp) & !is.na(parmax)
-    smth <- spline(xp[cond], parmax[cond], n = 200.)
+    opt <- unlist(lapply(x, function(x.) -optim(xi.hat, fn=nLL, x=x., ...)$value))
+    crit <- object$ll.max - qchisq(0.999, df=1) / 2
+    x <- x[opt > crit]
+    opt <- opt[opt > crit]
+    bothFine <- !is.na(x) & !is.na(opt)
+    smth <- spline(x[bothFine], opt[bothFine], n = 256)
+
     ## plot
+    opar <- par(no.readonly=TRUE)
+    on.exit(par(opar))
+    par(mar=c(5.1, 4.1+0.5, 4.1, 2.1+2.2)) # enlarge plot region (a bit to the left and more to the right)
+    plotTail(object, ppoints.gpd=ppoints.gpd, xlab=xlab, ylab=ylab) # estimated tail probabilities (empirical and GPD)
+    abline(v = RM.hat, lty=2) # vertical line for RM estimate
     par(new = TRUE)
-    plot(xp, parmax, type = "n", xlab = "", ylab = "", axes = FALSE,
-         ylim = range(overallmax, crit), xlim = range(u, xmax), log = "x")
-    axis(4, at = overallmax - qchisq(c(0.95, 0.99), 1.)/2., labels = c("95", "99"), tick = TRUE)
-    ## line
-    ## abline(h = overallmax - aalpha / 2, lty = 2, col = col) TODO this makes no sense
-    lines(smth, lty = 2., col = col)
-    ## TODO: should be invisible()
-    ci <- smth$x[smth$y > overallmax - aalpha/2.]
-    out <- c(min(ci), point.est, max(ci))
-    names(out) <- c("Lower CI", "Estimate", "Upper CI")
-    out
+    plot(x, opt, type = "n", xlab = "", ylab = "", axes = FALSE,
+         xlim = xlim.plotTail, log = "x") # does *not* plot, only sets up the coordinate system (as for plotTail()!)
+    lines(smth, lty=3, lwd=1.5) # RM CIs
+    axis(4, at = object$ll.max - qchisq(c(0.5, 0.8, 0.9, 0.95, 0.99, 0.995, 0.999), df=1.)/2.,
+         labels = c(0.5, 0.8, 0.9, 0.95, 0.99, 0.995, 0.999)) # y axis on the right
+    mtext(text="Confidence intervals", side=4, line=3) # label
+    if(!is.null(legend.pos)) {
+        legend(legend.pos, inset=0.01, cex=0.8, lty=1:3, lwd=c(1, 1, 1.5), col=1, bty="n",
+               legend=as.expression(
+                      c(substitute("GPD("*xi.*","~beta.*") tail estimate",
+                                   list(xi.=round(xi.hat,2), beta.=round(beta.hat,2))),
+                        substitute(RM.[a]~"estimate (="~RM..*")",
+                                   list(a=alpha, RM.=RM, RM..=round(RM.hat,2))),
+                        substitute(RM.[a]~"CIs", list(a=alpha, RM.=RM)) )))
+    }
+
+    ## ci <- smth$x[smth$y > object$ll.max - qchisq(0.95, df=1)/2]
+    ## c("Lower CI" = min(ci), "Estimate" = RM.hat, "Upper CI" = max(ci))
+    ## return
+    invisible()
 }
 
 ## ME plot
