@@ -242,12 +242,14 @@ par(opar) # reset plot parameters to their old values
 ### 4.2.1) xi and beta fitting #################################################
 
 ## fit with bootstrap via gamGPDboot(); recall: beta = exp(nu) / (1 + xi)
-sfile <- "game-demo.rds"
+sfile <- "game.rds"
 if(file.exists(sfile)){
     bootGPD <- readRDS(sfile) # read the bootstrapped object
 } else {
-    ## note: see ?s -> by: In the factor 'by' variable case a replicate of the
-    ##                     smooth is produced for each factor level
+    ## note: - see ?s -> by: In the factor 'by' variable case a replicate of the
+    ##                       smooth is produced for each factor level
+    ##       - this takes some minutes... get a coffee
+    ##       - the result object will be stored in 'game.rds' in your working directory
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
                           xiFrhs = ~ group + s(year, k=edof+1, bs="cr", by=group) - 1,
                           nuFrhs = ~ group + s(year, k=edof+1, bs="cr", by=group) - 1,
