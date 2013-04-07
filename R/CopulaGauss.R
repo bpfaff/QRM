@@ -20,7 +20,7 @@
 rcopula.gauss <- function(n, Sigma){
   d <- dim(Sigma)[1]
   diagvals <- diag(Sigma)
-  if(!(all(diagvals == 1))) stop("Sigma should be correlation matrix")
+  if(!(all(diagvals == 1))) stop("\n'Sigma' should be correlation matrix.\n")
   mnorm <- rmnorm(n, Sigma = Sigma, mu = 0)
   matrix(pnorm(mnorm), ncol = d)
 }
