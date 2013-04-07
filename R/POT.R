@@ -382,7 +382,7 @@ hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
   n <- length(ordered)
   option <- match.arg(option)
   if((option == "quantile") && (is.na(p)))
-    stop("Input a value for the probability p")
+    stop("\nInput a value for the probability p.\n")
   if ((option == "quantile") && (p < 1 - start/n)){
     cat("Graph may look strange !! \n\n")
     cat(paste("Suggestion 1: Increase `p' above", format(signif(1 - start/n, 5)), "\n"))
