@@ -190,7 +190,7 @@ plotTail <- function(object, ppoints.gpd = ppoints(256),
 ##' @param xlab x axis label
 ##' @param ylab y axis label
 ##' @param legend.pos position as accepted by legend() or NULL (no legend)
-##' @param ... additional arguments passed to plot()
+##' @param ... additional arguments passed to optim()
 ##' @return invisible()
 ##' @author Marius Hofert
 ##' TODO: we should use optimize(), improve on nLL(), and use ... for plot!
