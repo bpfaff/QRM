@@ -273,7 +273,7 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"),
 }
 
 ## ME plot
-MEplot <- function(data, omit = 3., labels = TRUE, ...)
+MEplot <- function(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold", ylab = "Mean Excess", ...)
 {
   if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
@@ -295,8 +295,7 @@ MEplot <- function(data, omit = 3., labels = TRUE, ...)
   points <- points[ - nl]
   excess <- cumsum(rev(data))[n.excess] - n.excess * points
   y <- excess/n.excess
-  plot(points[1.:(nl - omit)], y[1.:(nl - omit)], xlab = "", ylab = "",...)
-  if(labels) title(xlab = "Threshold", ylab = "Mean Excess")
+  plot(points[1.:(nl - omit)], y[1.:(nl - omit)], main = main, xlab = xlab, ylab = ylab, ...)
   return(invisible(list(x = points[1.:(nl - omit)], y = y[1.:(nl - omit)])))
 }
 
