@@ -18,8 +18,8 @@ findthreshold <- function(data, ne)
 {
     if(is.timeSeries(data)) data <- as.vector(series(data))
     if(!is.vector(data))
-        stop("data input to findthreshold() must be a vector or timeSeries with only one data column")
-    if(all(length(data) < ne)) stop("data length less than ne (number of exceedances")
+        stop("\ndata input to findthreshold() must be a vector or timeSeries with only one data column.\n")
+    if(all(length(data) < ne)) stop("\ndata length less than ne (number of exceedances.\n")
     data <- rev(sort(as.numeric(data)))
     thresholds <- unique(data)
     indices <- match(data[ne], thresholds)
@@ -37,9 +37,9 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   optfunc <- match.arg(optfunc)
   information <- match.arg(information)
   if(is.na(nextremes) & is.na(threshold))
-    stop("Enter either a threshold or the number of upper extremes")
+    stop("\nEnter either a threshold or the number of upper extremes.\n")
   if(!is.na(nextremes) & !is.na(threshold))
-    stop("Enter EITHER a threshold or the number of upper extremes")
+    stop("\nEnter either a threshold or the number of upper extremes.\n")
   if(is.timeSeries(data)) data <- series(data)
   data <- as.numeric(data)
   n <- length(data)
@@ -103,7 +103,7 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
     denom <- Nu * (1. - 2. * xi) * (3. - 2. * xi)
     if(xi > 0.5){
       denom <- NA
-      warning("Asymptotic standard errors not available for PWM Type when xi > 0.5")
+      warning("\nAsymptotic standard errors not available for PWM Type when xi > 0.5.\n")
     }
     one <- (1. - xi) * (1. - xi + 2. * xi^2.) * (2. - xi)^2.
     two <- (7. - 18. * xi + 11. * xi^2. - 2. * xi^3.) * beta^2.
@@ -217,13 +217,13 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"),
     RM.hat <- switch(RM,
                      "VaR" = VaR,
                      "ES" = ES,
-                     stop("wrong argument 'RM'")) # risk measure estimate
+                     stop("\nwrong argument 'RM'.\n")) # risk measure estimate
 
     ## x values for CI evaluation
     start <- switch(RM,
                     "VaR" = u,
                     "ES" = VaR,
-                    stop("wrong argument 'RM'"))
+                    stop("\nwrong argument 'RM'.\n"))
     xlim.plotTail <- range(exceedance, u + qGPD(ppoints.gpd, xi=xi.hat, beta=beta.hat)) # x range (as for plotTail()!)
     x <- exp(seq(log(start), log(xlim.plotTail[2]), length=like.num)) # x values where the evaluate likelihood based confidence intervals
 
@@ -232,7 +232,7 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"),
         beta <- switch(RM,
                      "VaR" = th * (x - u) / (a^(-th) - 1),
                      "ES" = ((1 - th) * (x - u)) / (((a^( - th) - 1) / th) + 1),
-                     stop("wrong argument 'RM'"))
+                     stop("\nwrong argument 'RM'.\n"))
         if(beta <= 0) 1e17 # dGPD() not defined there since log(beta)... but optim() needs finite initial value
         else -sum(dGPD(exceedance-u, th, beta, log=TRUE)) # -log-likelihood
     }
@@ -437,7 +437,7 @@ hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
 plotFittedGPDvsEmpiricalExcesses <- function(data, threshold = NA, nextremes = NA)
 {
   if(is.na(nextremes) & is.na(threshold))
-    stop("Enter either a threshold or the number of upper extremes")
+    stop("\nEnter either a threshold or the number of upper extremes.\n")
   if(is.timeSeries(data)) data <- series(data)
   mod <- fit.GPD(data, threshold, nextremes)
   if(!is.na(nextremes)) threshold <- findthreshold(as.vector(data), nextremes)
