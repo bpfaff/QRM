@@ -84,17 +84,6 @@ RiskMeasures(out, p)
 }
 
 \details{
-  \code{MEplot()}: An upward trend in plot shows heavy-tailed
-  behaviour. In particular, a straight line with positive gradient above
-  some threshold is a sign of Pareto behaviour in tail. A downward trend
-  shows thin-tailed behaviour whereas a line with zero gradient shows an
-  exponential tail. Because upper plotting points are the average of a
-  handful of extreme excesses, these may be omitted for a prettier
-  plot.\cr
-  \code{RiskMeasures()}: calculates risk measures (VaR or ES) based on a
-  generalized Pareto model fitted to losses over a high threshold.\cr
-  \code{xiplot()}: creates a plot showing how the estimate of shape
-  varies with threshold or number of extremes.\cr
   \code{hillplot()}: This plot is usually calculated from the alpha
   perspective. For a generalized Pareto analysis of heavy-tailed data
   using the gpd function, it helps to plot the Hill estimates for
@@ -103,9 +92,20 @@ RiskMeasures(out, p)
   perhaps 0.1 of the sample size (10--50 order statistics in a sample of
   size 1000).  Hence one should NOT be using a 95 percent threshold for
   Hill estimates.\cr
+  \code{MEplot()}: An upward trend in plot shows heavy-tailed
+  behaviour. In particular, a straight line with positive gradient above
+  some threshold is a sign of Pareto behaviour in tail. A downward trend
+  shows thin-tailed behaviour whereas a line with zero gradient shows an
+  exponential tail. Because upper plotting points are the average of a
+  handful of extreme excesses, these may be omitted for a prettier
+  plot.\cr
   \code{plotFittedGPDvsEmpiricalExcesses()}: Build a graph which plots
   the GPD fit of excesses over a threshold u and the corresponding
-  empirical distribution function for observed excesses.
+  empirical distribution function for observed excesses.\cr
+  \code{RiskMeasures()}: Calculates risk measures (VaR or ES) based on a
+  generalized Pareto model fitted to losses over a high threshold.\cr
+  \code{xiplot()}: Creates a plot showing how the estimate of shape
+  varies with threshold or number of extremes.
 }
 
 \seealso{
