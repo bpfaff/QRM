@@ -18,9 +18,9 @@
 equicorr <- function(d, rho){
   d <- as.integer(d)
   if(abs(rho) > 1)
-    stop("Correlation is greater than unity in absolute value")
+    stop("\nCorrelation is greater than unity in absolute value.\n")
   if(rho < ( - (d - 1.0)^(-1.0)))
-    stop(paste("rho must be at least",  - (d - 1.0)^(-1.0)))
+    stop(paste("\n'rho' must be at least",  - (d - 1.0)^(-1.0), ".\n"))
   out <- matrix(rho, nrow = d, ncol = d)
   diag(out) <- 1
   out
