@@ -20,7 +20,7 @@
 rcopula.t <- function(n, df, Sigma){
   d <- dim(Sigma)[1]
   diagvals <- diag(Sigma)
-  if(!(all(diagvals == 1))) stop("Sigma should be correlation matrix")
+  if(!(all(diagvals == 1))) stop("\n'Sigma' should be correlation matrix.\n")
   tmp <- rmt(n, df, Sigma, mu = 0)
   matrix(pt(tmp, df), ncol = d)
 }
@@ -52,7 +52,7 @@ fit.tcopula <- function(Udata, method = c("all", "Kendall", "Spearman"), startdf
   } else {
     P <- Spearman(Udata)
   }
-  if(min(eigen(P)$values) < 0) stop("Non psd covariance matrix")
+  if(min(eigen(P)$values) < 0) stop("\nNon psd covariance matrix.\n")
   if(method == "all"){
     theta <- c(startdf, Pdeconstruct(P))
     fit <- nlminb(theta, negloglik1, data = Udata, ...)
