@@ -24,6 +24,7 @@ TODO Utility.R
 ** TODO put several R files together
 ** TODO improve on .Rd
 ** TODO POT.R is a major part but requires much more work => separate figures and computations!
+** TODO Plot functions in POT.R: Explicitly set arguments for internal calls to plot as NULL and provide in function body default values. More freedom for user and passing of ellipsis argument.
 ** TODO POT.Rd does not describe any return objects! In particular, fit.GPD()$data contains the exceedances, not the original data (the latter should be renamed to 'x')
 * Mid term
 ** TODO replace as much as possible concerning copulas by proper function from package 'copula'
