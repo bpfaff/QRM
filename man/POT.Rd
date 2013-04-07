@@ -29,7 +29,7 @@ showRM(object, alpha, RM = c("VaR", "ES"),
        xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
        legend.pos = "topright", ...)
 findthreshold(data, ne)
-MEplot(data, omit = 3, labels=TRUE, ...)
+MEplot(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold", ylab = "Mean Excess", ...)
 xiplot(data, models = 30., start = 15., end = 500., reverse = TRUE,
        ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...)
 hillPlot(data, option = c("alpha", "xi", "quantile"), start = 15,
@@ -48,15 +48,14 @@ RiskMeasures(out, p)
   \item{data}{\code{numeric}, data vector or timesSeries.}
   \item{end}{\code{integer}, maximum number of exceedances to be
     considered.}
-  \item{ppoints.gpd}{points in (0,1) for evaluating the GPD tail estimate.}
-  \item{main,xlab,ylab}{title, x axis and y axis labels.}
   \item{information}{\code{character}, whether standard errors should be
     calculated with \dQuote{observed} or \dQuote{expected}
     information. This only applies to maximum likelihood type; for
   \dQuote{pwm} type \dQuote{expected} information is used if possible.}
   \item{labels}{\code{logical}, whether axes shall be labelled.}
+  \item{legend.pos}{if not \code{\link{NULL}}, position of \code{\link{legend}()}.}
   \item{like.num}{\code{integer}, count of evaluations of profile likelihood.}
-  \item{type}{\code{character}, estimation by either ML- or PWM type.}
+  \item{main,xlab,ylab}{title, x axis and y axis labels.}
   \item{models}{\code{integer}, count of consecutive gpd models to be
     fitted; \emph{i.e.}, the count of different thresholds at which to
     re-estimate \eqn{\xi}{xi}; this many \eqn{\xi}{xi} estimates will be
@@ -71,6 +70,7 @@ RiskMeasures(out, p)
     "quantile" (a quantile estimate) should be plotted.}
   \item{out}{\code{list}, returned value from fitting GPD.}
   \item{p}{\code{vector}, probability levels for risk measures.}
+  \item{ppoints.gpd}{points in (0,1) for evaluating the GPD tail estimate.}
   \item{reverse}{\code{logical}, plot ordered by increasing threshold
     or number of extremes.}
   \item{RM}{\code{character}, risk measure, either "VaR" or "ES"}
@@ -78,7 +78,7 @@ RiskMeasures(out, p)
     considered.}
   \item{table}{\code{logical}, printing of a result table.}
   \item{threshold}{\code{numeric}, threshold value.}
-  \item{legend.pos}{if not \code{\link{NULL}}, position of \code{\link{legend}()}.}
+  \item{type}{\code{character}, estimation by either ML- or PWM type.}
   \item{...}{ellpsis, arguments are passed down to either \code{plot()}
     or \code{optim()} or \code{nlminb()}.}
 }
