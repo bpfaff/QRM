@@ -225,18 +225,23 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"),
                     "ES" = VaR,
                     stop("\nwrong argument 'RM'.\n"))
     xlim.plotTail <- range(exceedance, u + qGPD(ppoints.gpd, xi=xi.hat, beta=beta.hat)) # x range (as for plotTail()!)
-    x <- exp(seq(log(start), log(xlim.plotTail[2]), length=like.num)) # x values where the evaluate likelihood based confidence intervals
+    x <- exp(seq(log(start), log(xlim.plotTail[2]), length=like.num)) # x values where the evaluate likelihood (based confidence intervals)
 
     ## computing CIs
-    nLL <- function(th, x) { # th = running xi; x = x-values where the evaluate CIs
+    nLL <- function(xi., x) { # xi. = running xi; x = x-values (risk measure value on x-axis) where the evaluate CIs
         beta <- switch(RM,
-                     "VaR" = th * (x - u) / (a^(-th) - 1),
-                     "ES" = ((1 - th) * (x - u)) / (((a^( - th) - 1) / th) + 1),
+                     "VaR" = xi. * (x - u) / (a^(-xi.) - 1),
+                     "ES" = ((1 - xi.) * (x - u)) / (((a^( - xi.) - 1) / xi.) + 1),
                      stop("\nwrong argument 'RM'.\n"))
         if(beta <= 0) 1e17 # dGPD() not defined there since log(beta)... but optim() needs finite initial value
-        else -sum(dGPD(exceedance-u, th, beta, log=TRUE)) # -log-likelihood
+        else -sum(dGPD(exceedance-u, xi., beta, log=TRUE)) # -log-likelihood
     }
+    ## 1d-optimization in xi for fixed x-value (= risk measure value; each of the above 'x').
+    ## The optimal *value* gives the likelihood value at the optimal xi,
+    ## i.e., the y-value of the likelihood curve at the particular x (= risk measure value)
+    ## (xi.hat = initial xi value)
     opt <- unlist(lapply(x, function(x.) -optim(xi.hat, fn=nLL, x=x., ...)$value))
+    ## TODO more docu here
     crit <- object$ll.max - qchisq(0.999, df=1) / 2
     x <- x[opt > crit]
     opt <- opt[opt > crit]
@@ -248,7 +253,7 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"),
     on.exit(par(opar))
     par(mar=c(5.1, 4.1+0.5, 4.1, 2.1+2.2)) # enlarge plot region (a bit to the left and more to the right)
     plotTail(object, ppoints.gpd=ppoints.gpd, xlab=xlab, ylab=ylab) # estimated tail probabilities (empirical and GPD)
-    abline(v = RM.hat, lty=2) # vertical line for RM estimate
+    abline(v = RM.hat, lty=2) # vertical line indicating RM estimate
     par(new = TRUE)
     plot(x, opt, type = "n", xlab = "", ylab = "", axes = FALSE,
          xlim = xlim.plotTail, log = "x") # does *not* plot, only sets up the coordinate system (as for plotTail()!)
