@@ -86,7 +86,6 @@ void SEprocExciteFunc(int*n, double *times, int *nmarks, double *marktimes, doub
 {
   int i=0, j;
   double thetime, gamma, delta, rho=0.0, tmp;
-
   gamma = *beta;
   delta = 0.0;
   if (*model ==2 )
