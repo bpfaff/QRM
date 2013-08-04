@@ -376,7 +376,25 @@ xiplot <- function(data, models = 30., start = 15., end = 500., reverse = TRUE,
   return(invisible(list(x = index, y = y, upper = u, lower = l)))
 }
 
-## Hill Plot
+##' @title Hill estimator for the tail index alpha (or 1/alpha) when
+##'        1-F(x) ~ x^{-alpha}*L(x), alpha > 0
+##' @param data data
+##' @param k number of upper order statistics
+##' @param tail.index logical indicating whether the estimator of the tail index
+##'        alpha is returned
+##' @return Hill estimator for alpha (the default) or 1/alpha
+##' @author Marius Hofert
+##' @note - See EKM (1997, p. 190, Eq. (4.12))
+##'       - vectorized in k
+hill <- function(data, k, tail.index=TRUE)
+{
+    stopifnot(k >= 2, length(data) >= max(k), data > 0)
+    lxs <- sort(log(data), decreasing=TRUE)
+    res <- vapply(k, function(k.) mean(lxs[seq_len(k.-1)]) - lxs[k.], NA_real_)
+    if(tail.index) 1/res else res
+}
+
+## Hill Plot (not using hill())
 hillPlot <- function (data, option = c("alpha", "xi", "quantile"), start = 15,
     end = NA, reverse = FALSE, p = NA, ci = 0.95, auto.scale = TRUE, labels = TRUE, ...)
 {

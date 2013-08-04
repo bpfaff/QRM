@@ -7,6 +7,7 @@
 \alias{showRM}
 \alias{xiplot}
 \alias{RiskMeasures}
+\alias{hill}
 \alias{hillPlot}
 \alias{plotFittedGPDvsEmpiricalExcesses}
 
@@ -32,6 +33,7 @@ findthreshold(data, ne)
 MEplot(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold", ylab = "Mean Excess", ...)
 xiplot(data, models = 30., start = 15., end = 500., reverse = TRUE,
        ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...)
+hill(data, k, tail.index = TRUE)
 hillPlot(data, option = c("alpha", "xi", "quantile"), start = 15,
          end = NA, reverse = FALSE, p = NA, ci = 0.95,
          auto.scale = TRUE, labels = TRUE, ...)
@@ -51,7 +53,9 @@ RiskMeasures(out, p)
   \item{information}{\code{character}, whether standard errors should be
     calculated with \dQuote{observed} or \dQuote{expected}
     information. This only applies to maximum likelihood type; for
-  \dQuote{pwm} type \dQuote{expected} information is used if possible.}
+    \dQuote{pwm} type \dQuote{expected} information is used if possible.}
+  \item{k}{number (greater than or equal to 2) of order statistics used
+           to compute the Hill plot.}
   \item{labels}{\code{logical}, whether axes shall be labelled.}
   \item{legend.pos}{if not \code{\link{NULL}}, position of \code{\link{legend}()}.}
   \item{like.num}{\code{integer}, count of evaluations of profile likelihood.}
@@ -77,6 +81,8 @@ RiskMeasures(out, p)
   \item{start}{\code{integer}, lowest number of exceedances to be
     considered.}
   \item{table}{\code{logical}, printing of a result table.}
+  \item{tail.index}{\code{logical} indicating whether the Hill estimator
+    of \eqn{alpha} (the default) or \eqn{1/alpha} is computed.}
   \item{threshold}{\code{numeric}, threshold value.}
   \item{type}{\code{character}, estimation by either ML- or PWM type.}
   \item{...}{ellpsis, arguments are passed down to either \code{plot()}
@@ -115,21 +121,64 @@ RiskMeasures(out, p)
 \examples{
 data(danish)
 plot(danish)
+
 MEplot(danish)
+
 xiplot(danish)
+
 hillPlot(danish, option = "alpha", start = 5, end = 250, p = 0.99)
 hillPlot(danish, option = "alpha", start = 5, end = 60, p = 0.99)
+
 plotFittedGPDvsEmpiricalExcesses(danish, nextremes = 109)
 u <- quantile(danish, probs=0.9, names=FALSE)
 plotFittedGPDvsEmpiricalExcesses(danish, threshold = u)
+
 findthreshold(danish, 50)
 mod1 <- fit.GPD(danish, threshold = u)
+
 RiskMeasures(mod1, c(0.95, 0.99))
 plotTail(mod1)
+
 showRM(mod1, alpha = 0.99, RM = "VaR", method = "BFGS")
 showRM(mod1, alpha = 0.99, RM = "ES", method = "BFGS")
+
 mod2 <- fit.GPD(danish, threshold = u, type = "pwm")
 mod3 <- fit.GPD(danish, threshold = u, optfunc = "nlminb")
+
+## Hill plot manually constructed based on hill()
+
+## generate data
+set.seed(1)
+n <- 1000 # sample size
+U <- runif(n)
+X1 <- 1/(1-U) # ~ F_1(x) = 1-x^{-1}, x >= 1 => Par(1)
+F2 <- function(x) 1-(x*log(x))^(-1) # Par(1) with distorted SV function
+X2 <- vapply(U, function(u) uniroot(function(x) 1-(x*log(x))^(-1)-u,
+                                    lower=1.75, upper=1e10)$root, NA_real_)
+
+## compute Hill estimators for various k
+k <- 10:800
+y1 <- hill(X1, k=k)
+y2 <- hill(X2, k=k)
+
+## Hill plot
+plot(k, y1, type="l", ylim=range(y1, y2, 1),
+     xlab=expression("Number"~~italic(k)~~"of upper order statistics"),
+     ylab=expression("Hill estimator for"~~alpha),
+     main="Hill plot") # Hill plot, good natured case (based on X1)
+lines(k, y2, col="firebrick") # Hill "horror" plot (based on X2)
+lines(x=c(10, 800), y=c(1, 1), col="royalblue3") # correct value alpha=1
+legend("topleft", inset=0.01, lty=c(1, 1, 1), bty="n",
+       col=c("black", "firebrick", "royalblue3"),
+       legend=as.expression(c("Hill estimator based on"~~
+                               italic(F)(x)==1-1/x,
+                              "Hill estimator based on"~~
+                               italic(F)(x)==1-1/(x~log~x),
+                              "Correct value"~~alpha==1)))
+
+## via hillPlot()
+hillPlot(X1, option="alpha", start=10, end=800)
+hillPlot(X2, option="alpha", start=10, end=800)
 }
 
 \keyword{distributions}
