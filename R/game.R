@@ -45,12 +45,12 @@
 ##'        same length as y
 ##' @return reparametrized log-likelihood l^r
 ##' @author Marius Hofert
-rLogL <- function(y, xi, nu, multivariate=TRUE)
+rlogL <- function(y, xi, nu, multivariate=TRUE)
 {
     stopifnot((n <- length(y)) > 0)
     if(multivariate){ # new setup
         stopifnot(length(xi)==n, length(nu)==n)
-        sum(mapply(rLogL, y=y, xi=xi, nu=nu, multivariate=FALSE)) # note: this leads to n=length(y)==1 in the next call of rLogL (so n==1 and sum() goes over 1 obs. => correct)
+        sum(mapply(rlogL, y=y, xi=xi, nu=nu, multivariate=FALSE)) # note: this leads to n=length(y)==1 in the next call of rlogL (so n==1 and sum() goes over 1 obs. => correct)
     } else { # classical setup
         stopifnot(length(xi)==1, length(nu)==1) # classical setup
         -n*(nu-log1p(xi))-(1+1/xi)*sum(log1p(xi*(1+xi)*exp(-nu)*y))
@@ -71,7 +71,7 @@ rLogL <- function(y, xi, nu, multivariate=TRUE)
 ##'         column 4: 2nd derivative of the reparameterized log-likelihood w.r.t. nu
 ##' @author Marius Hofert
 ##' Note: Column 3 and 4 have different sign than in the old code
-DrLogL <- function(y, xi, nu, verbose=TRUE)
+DrlogL <- function(y, xi, nu, verbose=TRUE)
 {
     stopifnot((n <- length(y)) > 0, length(xi)==n, length(nu)==n)
 
@@ -95,18 +95,20 @@ DrLogL <- function(y, xi, nu, verbose=TRUE)
             print(tab)
         }
     }
+
+    # TODO
     lxiyb <- log1p(xi*y/b) # log(1+xi*y/beta)
 
     ## components of the score function l(\bm{xi},\bm{beta};y_i, i=1,..,n')
     ## corresponding to l(xi(_i),beta(_i);y(_i))=log g_{xi(_i),beta(_i)}(y(_i)),
     ## => sum to get l(\bm{xi},\bm{beta};y_i, i=1,..,n')
-    l.b <- (xi1*ybxiy-1) / b # derivative of rLogL w.r.t. beta
-    l.xi <- 1/xi^2 * lxiyb - (1+1/xi) * ybxiy # derivative of rLogL w.r.t. xi
+    l.b <- (xi1*ybxiy-1) / b # derivative of rlogL w.r.t. beta
+    l.xi <- 1/xi^2 * lxiyb - (1+1/xi) * ybxiy # derivative of rlogL w.r.t. xi
 
     ## components of the observed Fisher information
-    l.bb <- -(y/b + (y-b)/bxiy) / bbxiy # 2nd derivative of rLogL w.r.t. beta
-    l.xixi <- -2/xi^3 * lxiyb + ybxiy * (2/xi^2 + (1+1/xi) * ybxiy) # 2nd derivative of rLogL w.r.t. xi
-    l.xib <- ybxiy * ((1+1/xi)/bxiy - 1/(xi*b)) # mixed partial derivative of rLogL w.r.t. xi and beta
+    l.bb <- -(y/b + (y-b)/bxiy) / bbxiy # 2nd derivative of rlogL w.r.t. beta
+    l.xixi <- -2/xi^3 * lxiyb + ybxiy * (2/xi^2 + (1+1/xi) * ybxiy) # 2nd derivative of rlogL w.r.t. xi
+    l.xib <- ybxiy * ((1+1/xi)/bxiy - 1/(xi*b)) # mixed partial derivative of rlogL w.r.t. xi and beta
 
     ## differentiate beta = beta(xi,nu) = exp(nu)/(1+xi) w.r.t. xi and nu
     b.xi <- -enu/xi1^2 # derivative of beta w.r.t. xi
@@ -131,7 +133,7 @@ DrLogL <- function(y, xi, nu, verbose=TRUE)
 ##'        the derivatives are printed
 ##' @return adjusted derivatives
 ##' @author Marius Hofert
-##' Note: That's a helper function of gamGPDfitUp()
+##' Note: That's an auxiliary function of gamGPDfitUp()
 adjustD2 <- function(der, verbose=TRUE)
 {
     ## setup
@@ -142,7 +144,7 @@ adjustD2 <- function(der, verbose=TRUE)
     isOK <- isFinite & !isNonNeg # logical indicating if der is okay (-Inf < . < 0)
     if(any(!isOK)){ # if not all derivativess are okay...
         if(sum(isOK)==0) stop("Can't adjust the derivatives, there are no finite, negative derivatives")
-        der[!isOK] <- mean(der[isOK]) # Note: there is no justification for this (just a quick-and-dirty solution)
+        der[!isOK] <- mean(der[isOK]) # Note: there is no justification for this (quick-and-dirty solution)
     }
     ## throw warning
     n <- length(der)
@@ -172,7 +174,7 @@ adjustD2 <- function(der, verbose=TRUE)
 ##' @param yname string containing the name of the column of y which contains
 ##'        the excesses
 ##' @param verbose logical indicating whether warnings about adjustments of
-##'        the derivatives and wrong arguments in DrLogL() are printed
+##'        the derivatives and wrong arguments in DrlogL() are printed
 ##' @param ... additional arguments passed to gam()
 ##' @return a list of length four containing
 ##'         element 1 (xi): object of class gamObject for xi as returned by mgcv::gam()
@@ -192,7 +194,7 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
     nu <- xi.nu[,2]
 
     ## compute one Newton step in xi
-    DrLL <- DrLogL(y[,yname], xi=xi, nu=nu, verbose=verbose) # (n1,4) matrix
+    DrLL <- DrlogL(y[,yname], xi=xi, nu=nu, verbose=verbose) # (n1,4) matrix
     rl.xi <- DrLL[,"rl.xi"] # score in xi
     rl.xixi. <- adjustD2(DrLL[,"rl.xixi"], verbose=verbose) # -weight
     Newton.xi <- xi - rl.xi / rl.xixi. # Newton step
@@ -209,7 +211,7 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
     if((n. <- length(xi.fit)) != n) stop(paste("length(xi.fit) = ",n.," != ",n,". This most likely comes from non-finite weights in the call to adjustD2()",sep=""))
 
     ## compute one Newton step in nu (for given new xi)
-    DrLL <- DrLogL(y[,yname], xi=xi.fit, nu=nu, verbose=verbose) # (n1,4) matrix
+    DrLL <- DrlogL(y[,yname], xi=xi.fit, nu=nu, verbose=verbose) # (n1,4) matrix
     rl.nu <- DrLL[,"rl.nu"] # score in nu
     rl.nunu. <- adjustD2(DrLL[,"rl.nunu"], verbose=verbose) # -weight
     Newton.nu <- nu - rl.nu / rl.nunu. # Newton step
@@ -247,13 +249,13 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
 ##' @param epsxi epsilon for stop criterion for xi
 ##' @param epsnu epsilon for stop criterion for nu
 ##' @param progress logical indicating whether progress information is displayed
-##' @param verbose logical passed to gamGPDfitUp() (thus to DrLogL() and
+##' @param verbose logical passed to gamGPDfitUp() (thus to DrlogL() and
 ##'        adjustD2())
 ##' @param ... additional arguments passed to gam() (called by gamGPDfitUp())
 ##' @return a list; see below
 ##' @author Marius Hofert
 gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
-                      init = fit.GPD(x[,datvar], threshold=threshold)$par.ests,
+                      init = fit.GPD(x[,datvar], threshold=threshold, type="pwm")$par.ests,
                       niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
                       progress = TRUE, verbose = FALSE, ...)
 {
@@ -338,7 +340,7 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     beta <- exp(nu)/(1+xi) # corresponding (fitted) beta
 
     ## log-likelihood
-    logL <- rLogL(y=y.[,datvar], xi=xi, nu=nu) # reparameterized log-likelihood (reparameterization doesn't matter, it's the same *value* as the original log-likelihood)
+    logL <- rlogL(y=y.[,datvar], xi=xi, nu=nu) # reparameterized log-likelihood (reparameterization doesn't matter, it's the same *value* as the original log-likelihood)
 
     ## fitted gamObjects for xi and nu and standard errors
     ## (contained in updates but for convenience we treat this additionally)
@@ -385,17 +387,6 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 
 ### gamGPDboot() ###############################################################
 
-##' @title Adjusted Sampling for 1-Element Vectors
-##' @param x see sample()
-##' @param size see sample()
-##' @param replace see sample()
-##' @param prob see sample()
-##' @return in case of length(x)==1, return x itself (rather than a sample from 1:x)
-##'         otherwise return sample(x, ...)
-##' @author Marius Hofert
-sample.real <- function(x, size, replace=FALSE, prob=NULL)
-    if(length(x)==1) x else sample(x, size=size, replace=replace, prob=prob)
-
 ##' @title Post-blackend Bootstrap of Chavez-Demoulin and Davison (2005) for gamGPDfit()
 ##' @param x see gamGPDfit()
 ##' @param B number of bootstrap replications
@@ -419,7 +410,7 @@ sample.real <- function(x, size, replace=FALSE, prob=NULL)
 ##'         objects based on the B bootstrap replications.
 ##' @author Marius Hofert
 gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
-                       init=fit.GPD(x[,datvar], threshold=threshold)$par.ests,
+                       init=fit.GPD(x[,datvar], threshold=threshold, type="pwm")$par.ests,
                        niter=32, include.updates=FALSE, epsxi=1e-5, epsnu=1e-5,
                        boot.progress=TRUE, progress=FALSE, verbose=FALSE,
                        debug=FALSE, ...)
@@ -455,7 +446,8 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
     bfit <- lapply(1:B, function(b){
         ## resample residuals within each group of (same) covariates,
         rr <- ave(fit$res, fit$covar,
-                  FUN=function(r) sample.real(r, size=length(r), replace=TRUE))
+                  FUN=function(r) if(length(r)==1) r else
+                        sample(r, size=length(r), replace=TRUE))
 
         ## compute and put in corresponding excesses (see Chavez-Demoulin and Davison (2005))
         ## Note: 1) they use a different reparameterization
@@ -468,10 +460,11 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                                           b, " of ", B, ":\n", sep="")
 
         ## call gamGPDfit()
-        ## note: threshold=0 => we discard those excesses which are equal to 0
+        ## note: threshold=0 (since the data is x.!)
+        ##       => we discard those excesses which are equal to 0
         bfitobj <- gamGPDfit(x=x., threshold=0, nextremes=nextremes, datvar="y",
                              xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                             init=init, # the same here due to run time and as fit.GPD() is quite buggy
+                             init=fit.GPD(x.$y, threshold=0, type="pwm")$par.ests,
                              niter=niter, include.updates=include.updates,
                              epsxi=epsxi, epsnu=epsnu,
                              progress=if(!boot.progress) FALSE else progress,
@@ -536,7 +529,7 @@ get.lambda.fit <- function(x)
 ##'         CI.low:  lower CI [based on *predicted* values]
 ##'         CI.up:   upper CI [based on *predicted* values]
 ##' @author Marius Hofert
-get.lambda.predict <- function(x, newdata=NULL, alpha=0.05)
+lambda.predict <- function(x, newdata=NULL, alpha=0.05)
 {
     ## check x
     stopifnot(inherits(x, "gam"))
@@ -660,7 +653,7 @@ get.GPD.fit <- function(x, alpha=0.05)
 ##'               predict: the predicted xi's
 ##'         beta: same as xi, just for beta; predicted values are based on beta.newdata
 ##' @author Marius Hofert
-get.GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
+GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
 {
     ## default for xi.newdata and beta.newdata
     if(is.null(xi.newdata)) { # choose useful default (covariates used for fitting but *all* combis of such)

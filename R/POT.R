@@ -49,16 +49,19 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
   exceedances <- data[data > threshold]
   excess <- exceedances - threshold
   Nu <- length(excess)
-  if(type == "ml"){
-    xbar <- mean(excess)
-    a0 <- xbar
-    gamma <- -0.35
-    delta <- 0.0
-    pvec <- ((1.:Nu) + delta)/(Nu + delta)
-    a1 <- mean(sort(excess) * (1. - pvec))
-    xi <- 2. - a0/(a0 - 2. * a1)
-    beta <- (2. * a0 * a1)/(a0 - 2. * a1)
-    par.ests <- c(xi,beta)
+
+  ## probability weighted moments (pwm)
+  xbar <- mean(excess)
+  a0 <- xbar
+  gamma <- -0.35
+  delta <- 0.0
+  pvec <- ((1.:Nu) + delta)/(Nu + delta)
+  a1 <- mean(sort(excess) * (1. - pvec))
+  xi <- 2. - a0/(a0 - 2. * a1) # estimated xi
+  beta <- (2. * a0 * a1)/(a0 - 2. * a1) # estimated beta
+  par.ests <- c(xi, beta) # initial estimates (improved by type = "ml")
+
+  if(type == "ml"){ # maximum likelihood (based on pwm initial values)
     negloglik <- function(theta, ydata) -sum(dGPD(ydata, theta[1], abs(theta[2]), log = TRUE))
     deriv <- function(theta, ydata){
       xi <- theta[1]
@@ -90,16 +93,8 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
       varcov <- matrix(c(one, cov, cov, two), 2.)
     }
   }
-  if(type == "pwm"){
-    xbar <- mean(excess)
-    a0 <- xbar
-    gamma <- -0.35
-    delta <- 0.0
-    pvec <- ((1.:Nu) + delta)/(Nu + delta)
-    a1 <- mean(sort(excess) * (1. - pvec))
-    xi <- 2. - a0/(a0 - 2. * a1)
-    beta <- (2. * a0 * a1)/(a0 - 2. * a1)
-    par.ests <- c(xi, beta)
+
+  if(type == "pwm"){ # probability weighted moments
     denom <- Nu * (1. - 2. * xi) * (3. - 2. * xi)
     if(xi > 0.5){
       denom <- NA
@@ -113,6 +108,7 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
     converged <- NA
     ll.max <- NA
   }
+
   par.ses <- sqrt(diag(varcov))
   p.less.thresh <- 1. - Nu / n
   out <- list(n = length(data), data = exceedances, threshold = threshold, # TODO: data are exceedances! not original data! confusing...

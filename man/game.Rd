@@ -1,4 +1,4 @@
-\name{gamGPDfitboot}
+\name{game}
 \alias{gamGPDfit}
 \alias{gamGPDboot}
 \title{Smooth Parameter Estimation and Bootstrapping of Generalized Pareto Distributions
@@ -15,11 +15,11 @@
 }
 \usage{
 gamGPDfit(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
-          init = fit.GPD(x[,datvar], threshold = threshold)$par.ests,
+          init = fit.GPD(x[,datvar], threshold = threshold, type = "pwm")$par.ests,
           niter = 32, include.updates = FALSE, epsxi = 1e-05, epsnu = 1e-05,
           progress = TRUE, verbose = FALSE, \dots)
 gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
-           init = fit.GPD(x[,datvar], threshold = threshold)$par.ests,
+           init = fit.GPD(x[,datvar], threshold = threshold, type = "pwm")$par.ests,
            niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
            boot.progress = TRUE, progress = FALSE, verbose = FALSE, debug = FALSE, \dots)
 }

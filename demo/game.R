@@ -20,12 +20,6 @@
 require(QRM)
 require(mgcv)
 
-## define (for now) non-exported functions
-get.lambda.fit <- QRM:::get.lambda.fit
-get.lambda.predict <- QRM:::get.lambda.predict
-get.GPD.fit <- QRM:::get.GPD.fit
-get.GPD.predict <- QRM:::get.GPD.predict
-
 ## set seed
 set.seed(271)
 
@@ -68,7 +62,7 @@ if(FALSE){
     gamDummy <- gam(loss ~ 1, data=z) # fit without covariates
     get.lambda.fit(gamDummy) # evaluate fitted object
     (prd <- predict(gamDummy, newdata=data.frame(foo=rep(LETTERS[1:2], each=3)), se.fit=TRUE)) # => predict() should just repeat the values in this case
-    get.lambda.predict(gamDummy) # predict from fitted object
+    lambda.predict(gamDummy) # predict from fitted object
 
     ## fitting results
     (res1 <- cbind(z, fit=gamFit1$fitted.values)) # same covariate combis (= (year, group)) => fits are equal
@@ -183,7 +177,7 @@ modlam <- gam(num ~ group + s(year, by=group) - 1, data=x.num, family=poisson)
 
 ## compute fitted and predicted values incl. pointwise asymptotic CIs
 lamFit <- get.lambda.fit(modlam)
-lamPred <- get.lambda.predict(modlam, alpha=a)
+lamPred <- lambda.predict(modlam, alpha=a)
 
 
 ### 4.1.2) Plot fitted and predicted lambda and CIs ############################
@@ -261,7 +255,7 @@ if(file.exists(sfile)){
 xibetaFit <- get.GPD.fit(bootGPD, alpha=a)
 
 ## compute predicted values
-xibetaPred <- get.GPD.predict(bootGPD)
+xibetaPred <- GPD.predict(bootGPD)
 
 
 ### 4.2.2) Plot fitted and predicted xi and CIs ################################
@@ -411,10 +405,10 @@ VaR.fit <- data.frame(covar, # covariates
 ### predict ####################################################################
 
 ## lamPred, xibetaPred => predicted VaR (= function in predicted lambda, xi, beta)
-## depends on bl and year. Predict on all 20 combinations; note: get.GPD.predict()
+## depends on bl and year. Predict on all 20 combinations; note: GPD.predict()
 ## does not (cannot) guarantee the same order of covariates as for lambda, for example
 ## => check! To guarantee the same order, one could either sort by hand (order())
-##    or call get.GPD.predict() with a specific newdata (namely covar)
+##    or call GPD.predict() with a specific newdata (namely covar)
 covar <- lamPred$covar
 lamPred. <- lamPred$predict # => 20
 ## pick out xi
