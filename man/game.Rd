@@ -144,9 +144,9 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   Generalized additive models for sample extremes,
   \emph{Applied Statistics} \bold{54}(1), 207--222.
 
-  Chavez-Demoulin, V., and Hofert, M. (to be submitted),
-  Smooth extremal models fitted by penalized maximum likelihood
-  estimation.
+  Chavez-Demoulin, V., Embrechts, P., and Hofert, M.,
+  An extreme value approach for modeling Operational
+  Risk losses depending on covariates.
 }
 \examples{
 ### Example 1: fitting capability ##############################################

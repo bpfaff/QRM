@@ -699,3 +699,34 @@ GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
                                    beta.newdata else NULL, # covariate combinations as specified by newdata
                      predict = exp(nu.pred.beta)/(1+xi.pred.beta))) # predicted beta
 }
+
+
+### Computing risk measures ####################################################
+
+##' @title Compute Value-at-Risk or Expected Shortfall
+##' @param x matrix with three columns containing lambda, xi, and beta
+##' @param alpha confidence level
+##' @param u threshold
+##' @param method either "VaR" for Value-at-Risk or "ES" for expected shortfall
+##' @return Value-at-Risk or expected shortfall
+risk.measure <- function(x, alpha, u, method=c("VaR", "ES")){
+    if(!is.matrix(x)) x <- rbind(x, deparse.level=0L)
+    stopifnot(ncol(x)==3)
+    lambda <- x[,1]
+    xi <- x[,2]
+    beta <- x[,3]
+    method <- match.arg(method)
+    switch(method,
+           "VaR"={
+               u+(beta/xi)*(((1-alpha)/lambda)^(-xi)-1)
+           },
+           "ES"={
+               ES <- (risk.measure(cbind(lambda, xi, beta),
+                                   alpha=alpha, u=u, method="VaR")+beta-xi*u)/(1-xi)
+               ## adjust to be Inf if xi > 1 (i.e., ES < 0)
+               ## that's a convention, see p. 79 Coles (2001)
+               if(any(xi > 1)) ES[xi > 1] <- Inf
+               ES
+           },
+           stop("wrong method"))
+}
