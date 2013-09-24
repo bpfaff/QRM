@@ -22,7 +22,7 @@
 \usage{
 fit.GPD(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
         information = c("observed", "expected"),
-        optfunc = c("optim", "nlminb"), ...)
+        optfunc = c("optim", "nlminb"), verbose = TRUE, ...)
 plotTail(object, ppoints.gpd = ppoints(256), main = "Estimated tail probabilities",
          xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)), ...)
 showRM(object, alpha, RM = c("VaR", "ES"),
@@ -70,6 +70,9 @@ RiskMeasures(out, p)
   \item{omit}{\code{integer}, count of upper plotting points to be
     omitted.}
   \item{optfunc}{\code{character}, function used for ML-optimization.}
+  \item{verbose}{\code{logical} indicating whether warnings are given;
+    currently only applies in the case where \code{type="pwm"} and
+    \code{xi > 0.5}.}
   \item{option}{\code{logical}, whether "alpha", "xi" (1 / alpha) or
     "quantile" (a quantile estimate) should be plotted.}
   \item{out}{\code{list}, returned value from fitting GPD.}

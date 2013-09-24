@@ -49,13 +49,28 @@ beta <- cbind(A = exp(rev(sq)) / (1+xi[,"A"]),
 
 if(FALSE){
 
+    require(mgcv)
     set.seed(271)
     ## dummy loss data
     z <- data.frame(year  = rep(2010:2012, each=5),
                     group = sample(LETTERS[1:2], size=15, replace=TRUE),
                     loss  = rexp(15))
     ## fitting
+    ## note: ?gam says:
+    ##       1) "The GAM penalized likelihood maximization problem is
+    ##           solved by Penalized Iteratively Reweighted Least Squares (P-IRLS)
+    ##           (see e.g. Wood 2000)"
+    ##       2) Details of the default underlying fitting methods are given in
+    ##          Wood (2011 and 2004)
+    ##       3) gam() calls mgcv:::estimate.gam() which calls mgcv:::gam.fit()
+    ##          => 'G' (first arg of mgcv:::gam.fit) contains all info
+    ##          => G$mf is not used; rather G$X (defined as X) => groups are treated as 0-1
+    ##             variables
+    if(FALSE)
+        debug(mgcv:::gam.fit)
     gamFit1 <- gam(loss ~ year + group - 1, data=z) # fit based on all provided covariates
+    if(FALSE)
+        undebug(mgcv:::gam.fit)
     gamFit2 <- gam(loss ~ year - 1, data=z) # fit based on some of the provided covariates
 
     ## test: no covariates

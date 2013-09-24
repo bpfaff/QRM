@@ -33,36 +33,46 @@
 ### Auxiliary functions ########################################################
 
 ##' Reparameterized log-likelihood l^r(xi, nu; y_1,..,y_n) = l(xi, exp(nu)/(1+xi);
-##' y_1,..,y_n), where l(xi, beta; y_1,..,y_n) = -n*log(beta)-(1+1/xi)*sum(
-##' log(1+xi*y_i/beta)) denotes the log-likelihood of a GPD(xi, beta) distribution
+##' y_1,..,y_n), where l(xi, beta; y_1,..,y_n) denotes the log-likelihood of a
+##' GPD(xi, beta) distribution
 ##'
 ##' @title Reparameterized log-Likelihood l^r
 ##' @param y vector of excesses (over a high threshold u)
-##' @param xi GPD(xi,beta) (single) parameter xi
-##' @param nu GPD(xi, beta) (single) parameter nu (orthogonal in the Fisher
+##' @param xi GPD(xi,beta) vector of parameters xi
+##' @param nu GPD(xi, beta) vector of parameters nu (orthogonal in the Fisher
 ##'        information metric to xi)
-##' @param multivariate logical indicating whether xi and nu may be vectors of the
-##'        same length as y
 ##' @return reparametrized log-likelihood l^r
 ##' @author Marius Hofert
-rlogL <- function(y, xi, nu, multivariate=TRUE)
+rlogL <- function(y, xi, nu)
 {
-    stopifnot((n <- length(y)) > 0)
-    if(multivariate){ # new setup
-        stopifnot(length(xi)==n, length(nu)==n)
-        sum(mapply(rlogL, y=y, xi=xi, nu=nu, multivariate=FALSE)) # note: this leads to n=length(y)==1 in the next call of rlogL (so n==1 and sum() goes over 1 obs. => correct)
-    } else { # classical setup
-        stopifnot(length(xi)==1, length(nu)==1) # classical setup
-        -n*(nu-log1p(xi))-(1+1/xi)*sum(log1p(xi*(1+xi)*exp(-nu)*y))
+    ## checks
+    stopifnot((n <- length(y)) > 0, length(xi)==n, length(nu)==n)
+    if(any(ii <- xi <= -1)) { # not a valid reparameterization (but we make it one)
+        perc <- 100*sum(ii)/length(ii) # percentage of xi <= -1
+        stop(round(perc,2), "% of all xi are <= -1; not a valid reparameterization since corresponding beta are not > 0") # beta = exp(nu)/(1+xi)
     }
+
+    ## set up result
+    res <- rep(-Inf, n)
+
+    ## main
+    ii <- (xi < 0 & (0 <= y & y < -exp(nu)/(xi*(1+xi)))) | (xi > 0 & y >= 0)
+    if(any(ii)) {
+        xi. <- xi[ii]
+        nu. <- nu[ii]
+        res[ii] <- log1p(xi.)-nu.-(1+1/xi.)*log1p(xi.*(1+xi.)*exp(-nu.)*y[ii])
+    }
+    ii <- xi == 0
+    if(any(ii)) res[ii] <- -(nu[ii]+exp(-nu[ii])*y[ii])
+    sum(res)
 }
 
 ##' @title Compute Derivatives of the Reparameterized log-Likelihood
 ##' @param y vector of excesses (over a high threshold u)
 ##' @param xi vector of GPD(xi,beta) parameters xi
 ##' @param nu vector of (orthogonal in the Fisher information metric)
-##'        GPD(xi, beta) parameters nu
-##' @param verbose logical indicating whether wrong arguments to log1p are printed
+##'        GPD(xi, beta) parameters nu (> 0)
+##' @param verbose logical indicating whether modified arguments are printed
 ##' @return (n x 4) matrix containing the partial derivatives of the
 ##'         reparameterized log-likelihood l^r where
 ##'         column 1: derivative of the reparameterized log-likelihood w.r.t. xi
@@ -73,58 +83,45 @@ rlogL <- function(y, xi, nu, multivariate=TRUE)
 ##' Note: Column 3 and 4 have different sign than in the old code
 DrlogL <- function(y, xi, nu, verbose=TRUE)
 {
+    ## checks
     stopifnot((n <- length(y)) > 0, length(xi)==n, length(nu)==n)
-
-    ## auxiliary results
-    enu <- exp(nu)
-    xi1 <- 1+xi
-    b <- enu/xi1 # beta
-    bxiy <- b+xi*y # beta+xi*y
-    ybxiy <- y/bxiy # y/(beta+xi*y)
-    bbxiy <- b*bxiy # beta*(beta+xi*y)
-
-    ## check (since this is sometimes a problematic case)
-    if(verbose && any(ind <- ((value <- xi*y/b) <= -1))){
-        warning("Some 1 + xi * y / b are <= 0, which, theoretically, should not happen:")
-        tab <- cbind(xi=xi[ind], b=b[ind], y=y[ind], value=value[ind])
-        nr <- nrow(tab)
-        if (nr > 10) {
-            print(tab[1:10,])
-            cat("... ... ... ...\n")
-        } else {
-            print(tab)
-        }
+    if(any(ii <- xi <= -1)) { # not a valid reparameterization (but we make it one)
+        perc <- 100*sum(ii)/length(ii) # percentage of xi <= -1
+        if(verbose) warning(round(perc,2), "% of all xi are <= -1; truncated at -1 (=> beta = Inf)") # beta = exp(nu)/(1+xi)
+        xi <- pmax(xi, -1)
     }
 
-    # TODO
-    lxiyb <- log1p(xi*y/b) # log(1+xi*y/beta)
+    ## set up result
+    res <- matrix(0, nrow=n, ncol=4,
+                  dimnames=list(NULL, c("rl.xi", "rl.nu", "rl.xixi", "rl.nunu")))
 
-    ## components of the score function l(\bm{xi},\bm{beta};y_i, i=1,..,n')
-    ## corresponding to l(xi(_i),beta(_i);y(_i))=log g_{xi(_i),beta(_i)}(y(_i)),
-    ## => sum to get l(\bm{xi},\bm{beta};y_i, i=1,..,n')
-    l.b <- (xi1*ybxiy-1) / b # derivative of rlogL w.r.t. beta
-    l.xi <- 1/xi^2 * lxiyb - (1+1/xi) * ybxiy # derivative of rlogL w.r.t. xi
-
-    ## components of the observed Fisher information
-    l.bb <- -(y/b + (y-b)/bxiy) / bbxiy # 2nd derivative of rlogL w.r.t. beta
-    l.xixi <- -2/xi^3 * lxiyb + ybxiy * (2/xi^2 + (1+1/xi) * ybxiy) # 2nd derivative of rlogL w.r.t. xi
-    l.xib <- ybxiy * ((1+1/xi)/bxiy - 1/(xi*b)) # mixed partial derivative of rlogL w.r.t. xi and beta
-
-    ## differentiate beta = beta(xi,nu) = exp(nu)/(1+xi) w.r.t. xi and nu
-    b.xi <- -enu/xi1^2 # derivative of beta w.r.t. xi
-    b.nu <- b # derivative of beta w.r.t. nu
-    b.xixi <- 2*enu/xi1^3 # 2nd derivative of beta w.r.t. xi
-    b.nunu <- b # 2nd derivative of beta w.r.t. nu
-
-    ## Now let's derive the form of the reparameterized log-likelihood l^r (=rl)
-    rl.xi <- l.xi + l.b * b.xi
-    rl.xixi <- l.xixi + 2 * l.xib * b.xi + l.bb * b.xi^2 + l.b * b.xixi
-    rl.nu <- l.b * b.nu
-    rl.nunu <- l.bb * b.nu^2 + l.b * b.nunu
-
-    ## return partial derivatives of the reparameterized log-likelihood l^r
-    ## w.r.t. xi and nu
-    cbind(rl.xi=rl.xi, rl.nu=rl.nu, rl.xixi=rl.xixi, rl.nunu=rl.nunu)
+    ## main
+    ii <- (xi < 0 & (0 <= y & y < -exp(nu)/(xi*(1+xi)))) | (xi > 0 & y >= 0)
+    if(any(ii)) {
+        ## auxiliary terms
+        xi. <- xi[ii]
+        nu. <- nu[ii]
+        y.  <-  y[ii]
+        a <- 1+xi.*(1+xi.)*exp(-nu.)*y.
+        la <- log1p(xi.*(1+xi.)*exp(-nu.)*y.)
+        a. <- exp(-nu.)*y.*(1+2*xi.)
+        ## main
+        res[ii,"rl.xi"] <- 1/(1+xi.) + la/xi.^2 - (1+1/xi.)*a./a
+        res[ii,"rl.xixi"] <- -1/(1+xi.)^2 - 2*la/xi.^3 + 2*a./(a*xi.^2) -
+            (1+1/xi.)*exp(-nu.)*y. * (2*a - (1+2*xi.)^2 * exp(-nu.)*y.) / a^2
+        res[ii,"rl.nu"] <- (-1+(1+xi.)*exp(-nu.)*y.) / a
+        res[ii,"rl.nunu"] <- -(1+xi.)^2*y.*exp(-nu)/a^2
+    }
+    ii <- xi == 0
+    if(any(ii)) {
+        ## auxiliary terms
+        ynu <- y[ii]*exp(-nu[ii])
+        res[ii,"rl.xi"] <- 0
+        res[ii,"rl.xixi"] <- 0
+        res[ii,"rl.nu"] <- -1+ynu
+        res[ii,"rl.nunu"] <- -ynu
+    }
+    res
 }
 
 ##' @title Function to Check and Adjust Second-Order Derivatives
@@ -142,7 +139,7 @@ adjustD2 <- function(der, verbose=TRUE)
     isNonNeg <- isFinite & der >= 0
     ## adjust the derivatives
     isOK <- isFinite & !isNonNeg # logical indicating if der is okay (-Inf < . < 0)
-    if(any(!isOK)){ # if not all derivativess are okay...
+    if(any(!isOK)){ # if not all derivatives are okay...
         if(sum(isOK)==0) stop("Can't adjust the derivatives, there are no finite, negative derivatives")
         der[!isOK] <- mean(der[isOK]) # Note: there is no justification for this (quick-and-dirty solution)
     }
@@ -255,7 +252,7 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
 ##' @return a list; see below
 ##' @author Marius Hofert
 gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
-                      init = fit.GPD(x[,datvar], threshold=threshold, type="pwm")$par.ests,
+                      init = fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
                       niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
                       progress = TRUE, verbose = FALSE, ...)
 {
@@ -410,7 +407,7 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 ##'         objects based on the B bootstrap replications.
 ##' @author Marius Hofert
 gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
-                       init=fit.GPD(x[,datvar], threshold=threshold, type="pwm")$par.ests,
+                       init=fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
                        niter=32, include.updates=FALSE, epsxi=1e-5, epsnu=1e-5,
                        boot.progress=TRUE, progress=FALSE, verbose=FALSE,
                        debug=FALSE, ...)
@@ -453,7 +450,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
         ## Note: 1) they use a different reparameterization
         ##       2) solve rr=log(1+xi*y/beta)/xi w.r.t. y
         y. <- expm1(rr*xi)*beta/xi # reconstruct excesses from residuals
-        x. <- cbind(fit$covar, y=y.) # add excesses
+        x. <- cbind(fit$covar, y=y.) # add excesses/covariates
 
         ## progress
         if(boot.progress && progress) cat("Starting fit in bootstrap run ",
@@ -464,7 +461,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
         ##       => we discard those excesses which are equal to 0
         bfitobj <- gamGPDfit(x=x., threshold=0, nextremes=nextremes, datvar="y",
                              xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                             init=fit.GPD(x.$y, threshold=0, type="pwm")$par.ests,
+                             init=fit.GPD(x.$y, threshold=0, type="pwm", verbose=FALSE)$par.ests,
                              niter=niter, include.updates=include.updates,
                              epsxi=epsxi, epsnu=epsnu,
                              progress=if(!boot.progress) FALSE else progress,

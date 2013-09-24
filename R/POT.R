@@ -31,7 +31,7 @@ findthreshold <- function(data, ne)
 ##       => bad naming here (use 'x' for input)
 fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
                     information = c("observed", "expected"),
-                    optfunc = c("optim", "nlminb"), ...)
+                    optfunc = c("optim", "nlminb"), verbose=TRUE, ...)
 {
   type <- match.arg(type)
   optfunc <- match.arg(optfunc)
@@ -98,7 +98,7 @@ fit.GPD <- function(data, threshold = NA, nextremes = NA, type = c("ml", "pwm"),
     denom <- Nu * (1. - 2. * xi) * (3. - 2. * xi)
     if(xi > 0.5){
       denom <- NA
-      warning("\nAsymptotic standard errors not available for PWM Type when xi > 0.5.\n")
+      if(verbose) warning("\nAsymptotic standard errors not available for PWM Type when xi > 0.5.\n")
     }
     one <- (1. - xi) * (1. - xi + 2. * xi^2.) * (2. - xi)^2.
     two <- (7. - 18. * xi + 11. * xi^2. - 2. * xi^3.) * beta^2.

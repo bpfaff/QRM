@@ -1,4 +1,4 @@
-\name{gam-aux}
+\name{game-aux}
 \alias{get.lambda.fit}
 \alias{lambda.predict}
 \alias{get.GPD.fit}
@@ -36,7 +36,7 @@ lambda.predict(x, newdata=NULL, alpha=0.05)
 get.GPD.fit(x, alpha=0.05)
 GPD.predict(x, xi.newdata=NULL, beta.newdata=NULL)
 
-risk.measure(x, alpha, threshold, method = c("VaR", "ES"))
+risk.measure(x, alpha, u, method = c("VaR", "ES"))
 }
 \arguments{
   \item{x}{For \code{get.lambda.fit()}, \code{lambda.predict()}
@@ -61,7 +61,7 @@ risk.measure(x, alpha, threshold, method = c("VaR", "ES"))
     \code{get.GPD.fit()} the significance level
     (typcially 0.05); for \code{risk.measure()} the confidence level
     (typically close to 1).}
-  \item{threshold}{threshold.}
+  \item{u}{threshold.}
   \item{method}{\code{\link{character}} string indicating the kind of
     risk measure (Value-at-Risk (\code{VaR}) or expected shortfall (\code{ES})).}
 }
