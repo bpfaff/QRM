@@ -24,7 +24,7 @@ require(mgcv)
 set.seed(271)
 
 ## frozen parameters
-nyrs <- length(yrs <- 2003:2012) # years
+nyrs <- length(yrs <- 2004:2013) # years
 ngrp <- length(grp <- c("A", "B")) # groups
 n <- round(cbind(A = 2800 + 800 * sin(pi*seq(0.2, 1, length.out=nyrs)),
                  B = 2000 * seq(1, 2, length.out=nyrs))) # sample sizes for each year (row) and group (column)
@@ -52,7 +52,7 @@ if(FALSE){
     require(mgcv)
     set.seed(271)
     ## dummy loss data
-    z <- data.frame(year  = rep(2010:2012, each=5),
+    z <- data.frame(year  = rep(2011:2013, each=5),
                     group = sample(LETTERS[1:2], size=15, replace=TRUE),
                     loss  = rexp(15))
     ## fitting
@@ -101,7 +101,7 @@ if(FALSE){
     ## => values for each of 'foo' are equal
     (gamPred22 <- predict(gamFit2, newdata=newdata2)) # similar to gamPred11 (exactly all covariates are used in newdata)
 
-    (newdata3 <- data.frame(year=seq(2010, 2012, by=0.5))) # intermediate values
+    (newdata3 <- data.frame(year=seq(2011, 2013, by=0.5))) # intermediate values
     (gamPred13 <- predict(gamFit1, newdata=newdata3)) # fails: 'group' not found
     (gamPred23 <- predict(gamFit2, newdata=newdata3)) # works! => predict can 'interpolate'
     ## => predict() always returns vectors (fit, se.fit) of length nrow(newdata)
@@ -114,34 +114,6 @@ if(FALSE){
 ## example functions for generating losses
 rGPD <- function(n, xi, beta) ((1-runif(n))^(-xi)-1)*beta/xi # sampling a GPD
 loss <- function(n, xi, beta, u) u + rGPD(n, xi=xi, beta=beta) # sampling losses
-
-##' @title Compute Value-at-Risk or Expected Shortfall
-##' @param x matrix with three columns containing lambda, xi, and beta
-##' @param alpha confidence level
-##' @param u threshold
-##' @param method either "VaR" for Value-at-Risk or "ES" for expected shortfall
-##' @return Value-at-Risk or expected shortfall
-risk.measure <- function(x, alpha, u, method=c("VaR", "ES")){
-    if(!is.matrix(x)) x <- rbind(x, deparse.level=0L)
-    stopifnot(ncol(x)==3)
-    lambda <- x[,1]
-    xi <- x[,2]
-    beta <- x[,3]
-    method <- match.arg(method)
-    switch(method,
-           "VaR"={
-               u+(beta/xi)*(((1-alpha)/lambda)^(-xi)-1)
-           },
-           "ES"={
-               ES <- (risk.measure(cbind(lambda, xi, beta),
-                                   alpha=alpha, u=u, method="VaR")+beta-xi*u)/(1-xi)
-               ## adjust to be Inf if xi > 1 (i.e., ES < 0)
-               ## that's a convention, see p. 79 Coles (2001)
-               if(any(xi > 1)) ES[xi > 1] <- Inf
-               ES
-           },
-           stop("wrong method"))
-}
 
 
 ### 3) Generate data ###########################################################
