@@ -461,7 +461,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
         ##       => we discard those excesses which are equal to 0
         bfitobj <- gamGPDfit(x=x., threshold=0, nextremes=nextremes, datvar="y",
                              xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                             init=fit.GPD(x.$y, threshold=0, type="pwm", verbose=FALSE)$par.ests,
+                             init=fit.GPD(x.[,"y"], threshold=0, type="pwm", verbose=FALSE)$par.ests,
                              niter=niter, include.updates=include.updates,
                              epsxi=epsxi, epsnu=epsnu,
                              progress=if(!boot.progress) FALSE else progress,
