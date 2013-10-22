@@ -14,17 +14,15 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-## GPD Distribution
-pGPD <- function(q, xi, beta = 1){
-  x <- q / beta
-  if(xi == 0){
-    out <- pexp(x)
-  } else {
-    out <- 1 -(1+xi*x)^(-1/xi)
-  }
-  out[x < 0] <- 0
-  if(xi < 0) out[x > -1 / xi] <- 1
-  out
+## GPD distribution function (fine for all q in IR, xi in IR, beta > 0)
+pGPD <- function(q, xi, beta = 1)
+{
+    stopifnot(beta > 0)
+    q. <- q / beta
+    res <- if(xi != 0) 1 -(1+xi*q.)^(-1/xi) else pexp(q.)
+    res[q. < 0] <- 0
+    if(xi < 0) res[q. > -1 / xi] <- 1
+    res
 }
 
 qGPD <- function(p, xi, beta = 1){

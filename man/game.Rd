@@ -112,7 +112,7 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     \item{\code{xi.covar}:}{(unique) covariates for \eqn{\xi}{xi};}
     \item{\code{nu.covar}:}{(unique) covariates for \eqn{\nu}{nu};}
     \item{\code{covar}:}{available covariate combinations used for
-      fitting \eqn{\beta}{beta}(\eqn{\xi}{xi}, \eqn{\nu}{nu});}
+      fitting \eqn{\beta}{beta} (\eqn{\xi}{xi}, \eqn{\nu}{nu});}
     \item{\code{y}:}{vector of excesses (exceedances minus threshold);}
     \item{\code{res}:}{residuals;}
     \item{\code{MRD}:}{mean relative distances between for all

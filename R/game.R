@@ -110,7 +110,7 @@ DrlogL <- function(y, xi, nu, verbose=TRUE)
         res[ii,"rl.xixi"] <- -1/(1+xi.)^2 - 2*la/xi.^3 + 2*a./(a*xi.^2) -
             (1+1/xi.)*exp(-nu.)*y. * (2*a - (1+2*xi.)^2 * exp(-nu.)*y.) / a^2
         res[ii,"rl.nu"] <- (-1+(1+xi.)*exp(-nu.)*y.) / a
-        res[ii,"rl.nunu"] <- -(1+xi.)^2*y.*exp(-nu)/a^2
+        res[ii,"rl.nunu"] <- -(1+xi.)^2*y.*exp(-nu.)/a^2
     }
     ii <- xi == 0
     if(any(ii)) {
@@ -359,6 +359,9 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     all.covars.nu <- lapply(seq_len(ncol(x.nu)), function(j) sort(unique(x.nu[,j]))) # determine levels
     names(all.covars.nu) <- colnames(x.nu) # put in names
 
+    ## compute the residuals
+    resi <- mapply(function(x, xi, beta) -log1p(-pGPD(x, xi, beta)), x=y.[,datvar], xi=xi, beta=beta)
+
     ## build list
     res <- list(xi=xi, # estimated xi
                 beta=beta, # estimated beta
@@ -367,9 +370,9 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
                 se.nu=se.nu, # standard error for nu
                 xi.covar=all.covars.xi, # (unique) covariates for xi
                 nu.covar=all.covars.nu, # (unique) covariates for nu
-                covar=y.[,union(xi.covars, nu.covars)], # *available* (not necessarily all) covariate combinations used for fitting beta (= xi *and* nu)
+                covar=y.[,union(xi.covars, nu.covars), drop=FALSE], # *available* (not necessarily all) covariate combinations used for fitting beta (= xi *and* nu)
                 y=y.[,datvar], # excesses
-                res=log1p(y.[,datvar]*xi/beta)/xi, # residuals
+                res=resi, # residuals
                 MRD=MRD, # mean relative distances between old/new (xi, nu) for all iterations
                 logL=logL, # log-likelihood at the estimated parameters
                 xiObj=xiObj, # gamObject for estimated xi (return object of mgcv::gam())
@@ -450,7 +453,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
         ## Note: 1) they use a different reparameterization
         ##       2) solve rr=log(1+xi*y/beta)/xi w.r.t. y
         y. <- expm1(rr*xi)*beta/xi # reconstruct excesses from residuals
-        x. <- cbind(fit$covar, y=y.) # add excesses/covariates
+        x. <- data.frame(fit$covar, y=y.) # add excesses/covariates
 
         ## progress
         if(boot.progress && progress) cat("Starting fit in bootstrap run ",
