@@ -18,12 +18,13 @@ gamGPDfit(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
           init = fit.GPD(x[,datvar], threshold = threshold,
                          type = "pwm", verbose = FALSE)$par.ests,
           niter = 32, include.updates = FALSE, epsxi = 1e-05, epsnu = 1e-05,
-          progress = TRUE, verbose = FALSE, \dots)
+          progress = TRUE, adjust = TRUE, verbose = FALSE, \dots)
 gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
            init = fit.GPD(x[,datvar], threshold = threshold,
                           type = "pwm", verbose = FALSE)$par.ests,
            niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
-           boot.progress = TRUE, progress = FALSE, verbose = FALSE, debug = FALSE, \dots)
+           boot.progress = TRUE, progress = FALSE, adjust = TRUE, verbose = FALSE,
+           debug = FALSE, \dots)
 }
 \arguments{
   \item{x}{data.frame containing the losses (in some component; can be
@@ -54,6 +55,8 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     \code{gamGPDfit()} is displayed. For \code{gamGPDboot()},
     \code{progress} is only passed to \code{gamGPDfit()} in the case that
     \code{boot.progress==TRUE}.}
+  \item{adjust}{\code{\link{logical}} indicating whether non-real values
+    of the derivatives are adjusted.}
   \item{verbose}{\code{\link{logical}} indicating whether additional
     information (in case of undesired behavior) is printed. For \code{gamGPDboot()},
     \code{progress} is only passed to \code{gamGPDfit()} if

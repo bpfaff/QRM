@@ -72,6 +72,7 @@ rlogL <- function(y, xi, nu)
 ##' @param xi vector of GPD(xi,beta) parameters xi
 ##' @param nu vector of (orthogonal in the Fisher information metric)
 ##'        GPD(xi, beta) parameters nu (> 0)
+##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical indicating whether modified arguments are printed
 ##' @return (n x 4) matrix containing the partial derivatives of the
 ##'         reparameterized log-likelihood l^r where
@@ -81,7 +82,7 @@ rlogL <- function(y, xi, nu)
 ##'         column 4: 2nd derivative of the reparameterized log-likelihood w.r.t. nu
 ##' @author Marius Hofert
 ##' Note: Column 3 and 4 have different sign than in the old code
-DrlogL <- function(y, xi, nu, verbose=TRUE)
+DrlogL <- function(y, xi, nu, adjust=TRUE, verbose=TRUE)
 {
     ## checks
     stopifnot((n <- length(y)) > 0, length(xi)==n, length(nu)==n)
@@ -121,42 +122,54 @@ DrlogL <- function(y, xi, nu, verbose=TRUE)
         res[ii,"rl.nu"] <- -1+ynu
         res[ii,"rl.nunu"] <- -ynu
     }
+
+    ## replace non-finite derivatives by mean of all finite ones
+    if(adjust) {
+        res[,"rl.xi"]   <- adjustD(res[,"rl.xi"],   order=1, verbose=verbose)
+        res[,"rl.xixi"] <- adjustD(res[,"rl.xixi"], order=2, verbose=verbose)
+        res[,"rl.nu"]   <- adjustD(res[,"rl.nu"],   order=1, verbose=verbose)
+        res[,"rl.nunu"] <- adjustD(res[,"rl.nunu"], order=2, verbose=verbose)
+    }
+
+    ## return
     res
 }
 
-##' @title Function to Check and Adjust Second-Order Derivatives
-##' @param der vector second-order derivatives
+##' @title Function to Adjust Derivatives
+##' @param x vector of values (derivatives)
+##' @param order order of the derivatives to be adjusted
 ##' @param verbose logical indicating whether warnings about adjustments of
 ##'        the derivatives are printed
 ##' @return adjusted derivatives
 ##' @author Marius Hofert
-##' Note: That's an auxiliary function of gamGPDfitUp()
-adjustD2 <- function(der, verbose=TRUE)
+##' Note: This is an auxiliary function of DrlogL()
+adjustD <- function(x, order, verbose=TRUE)
 {
-    ## setup
-    isFinite <- is.finite(der)
-    isNonFinite <- !isFinite
-    isNonNeg <- isFinite & der >= 0
-    ## adjust the derivatives
-    isOK <- isFinite & !isNonNeg # logical indicating if der is okay (-Inf < . < 0)
-    if(any(!isOK)){ # if not all derivatives are okay...
-        if(sum(isOK)==0) stop("Can't adjust the derivatives, there are no finite, negative derivatives")
-        der[!isOK] <- mean(der[isOK]) # Note: there is no justification for this (quick-and-dirty solution)
+    stopifnot(order==1 || order==2)
+
+    ## order == 1
+    ii <- is.finite(x) # indices of value which are fine (not NA, NaN, Inf, or -Inf)
+    res <- x
+    if(any(!ii)) {
+        if(sum(ii)==0) stop("Can't adjust derivatives, there are no finite values")
+        if(verbose) warning(sum(!ii)," (",
+                            round(100*sum(!ii)/length(res), 2),
+                            "%) non-finite derivatives adjusted")
+        res[!ii] <- mean(res[ii])
     }
-    ## throw warning
-    n <- length(der)
-    if(verbose && any(isNonFinite)){
-        numNA <- sum(isNonFinite)
-        perNA <- round(100*numNA/n, 2)
-        warning(numNA," (",perNA,"%) non-finite derivatives found and adjusted")
+
+    ## order == 2 => additionally check that 2nd order derivatives are negative
+    ii <- res < 0
+    if(order == 2 && any(!ii)) {
+        if(sum(ii)==0) stop("Can't adjust second-order derivatives, there are no negative values")
+        if(verbose) warning(sum(!ii)," (",
+                            round(100*sum(!ii)/length(res), 2),
+                            "%) non-negative second-order derivatives adjusted")
+        res[!ii] <- mean(res[ii])
     }
-    if(verbose && any(isNonNeg)){
-        numNonNeg <- sum(isNonNeg)
-        perNonNeg <- round(100*numNonNeg/n, 2)
-        warning(numNonNeg," (",perNonNeg,"%) non-negative second-order derivatives found and adjusted")
-    }
+
     ## return
-    der
+    res
 }
 
 ##' @title Compute Update (one Iteration) in gamGPDfit()
@@ -170,6 +183,7 @@ adjustD2 <- function(der, verbose=TRUE)
 ##'        for fitting nu
 ##' @param yname string containing the name of the column of y which contains
 ##'        the excesses
+##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical indicating whether warnings about adjustments of
 ##'        the derivatives and wrong arguments in DrlogL() are printed
 ##' @param ... additional arguments passed to gam()
@@ -180,7 +194,7 @@ adjustD2 <- function(der, verbose=TRUE)
 ##'         element 4 (nu.weights): weights associated with nu
 ##' @author Marius Hofert
 ##' Note: That's a helper function of gamGPDfit()
-gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
+gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TRUE, ...)
 {
     stopifnot(is.data.frame(y), (dim. <- dim(y))[2] >= 1,
               length(which(colnames(y)==yname))==1,
@@ -191,9 +205,9 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
     nu <- xi.nu[,2]
 
     ## compute one Newton step in xi
-    DrLL <- DrlogL(y[,yname], xi=xi, nu=nu, verbose=verbose) # (n1,4) matrix
+    DrLL <- DrlogL(y[,yname], xi=xi, nu=nu, adjust=adjust, verbose=verbose) # (n1,4) matrix
     rl.xi <- DrLL[,"rl.xi"] # score in xi
-    rl.xixi. <- adjustD2(DrLL[,"rl.xixi"], verbose=verbose) # -weight
+    rl.xixi. <- DrLL[,"rl.xixi"] # -weight
     Newton.xi <- xi - rl.xi / rl.xixi. # Newton step
 
     ## concatenate Newton.xi and rl.xixi. to y, build formula, and estimate xi
@@ -205,12 +219,12 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
 
     ## build fitted (xi) object and check
     xi.fit <- fitted(xi.obj)
-    if((n. <- length(xi.fit)) != n) stop(paste("length(xi.fit) = ",n.," != ",n,". This most likely comes from non-finite weights in the call to adjustD2()",sep=""))
+    if((n. <- length(xi.fit)) != n) stop("After introducing adjustD(), this error should not appear anymore")
 
     ## compute one Newton step in nu (for given new xi)
-    DrLL <- DrlogL(y[,yname], xi=xi.fit, nu=nu, verbose=verbose) # (n1,4) matrix
+    DrLL <- DrlogL(y[,yname], xi=xi.fit, nu=nu, adjust=adjust, verbose=verbose) # (n1,4) matrix
     rl.nu <- DrLL[,"rl.nu"] # score in nu
-    rl.nunu. <- adjustD2(DrLL[,"rl.nunu"], verbose=verbose) # -weight
+    rl.nunu. <- DrLL[,"rl.nunu"] # -weight
     Newton.nu <- nu - rl.nu / rl.nunu. # Newton step
 
     ## concatenate Newton.nu and rl.nunu. to y, build formula, and estimate nu
@@ -246,15 +260,16 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, verbose=TRUE, ...)
 ##' @param epsxi epsilon for stop criterion for xi
 ##' @param epsnu epsilon for stop criterion for nu
 ##' @param progress logical indicating whether progress information is displayed
+##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical passed to gamGPDfitUp() (thus to DrlogL() and
-##'        adjustD2())
+##'        adjustD())
 ##' @param ... additional arguments passed to gam() (called by gamGPDfitUp())
 ##' @return a list; see below
 ##' @author Marius Hofert
 gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
                       init = fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
                       niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
-                      progress = TRUE, verbose = FALSE, ...)
+                      progress = TRUE, adjust = TRUE, verbose = FALSE, ...)
 {
     ## checks
     stopifnot(is.data.frame(x), length(init)==2, niter>=1, epsxi>0, epsnu>0)
@@ -296,7 +311,7 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
         }
         updates[[iter]] <- gamGPDfitUp(y., xi.nu=param.old,
                                        xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                                       yname=datvar, verbose=verbose, ...) # returns a list of two gam() objects containg the fitted (xi, nu)
+                                       yname=datvar, adjust=adjust, verbose=verbose, ...) # returns a list of two gam() objects containg the fitted (xi, nu)
         param.new <- sapply(updates[[iter]][c("xi", "nu")], fitted)
         ## note: param.old and param.new have the same rownames/colnames
 
@@ -402,6 +417,7 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 ##' @param epsnu see gamGPDfit()
 ##' @param boot.progress logical indicating whether progress information is displayed
 ##' @param progress see gamGPDfit() (only used if progress==TRUE)
+##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose see gamGPDfit() (only used if progress==TRUE)
 ##' @param debug logical indicating whether initial fit is saved
 ##' @param ... see gamGPDfit()
@@ -412,7 +428,7 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                        init=fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
                        niter=32, include.updates=FALSE, epsxi=1e-5, epsnu=1e-5,
-                       boot.progress=TRUE, progress=FALSE, verbose=FALSE,
+                       boot.progress=TRUE, progress=FALSE, adjust=TRUE, verbose=FALSE,
                        debug=FALSE, ...)
 {
     ## progress
@@ -427,7 +443,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
     fit <- gamGPDfit(x=x, threshold=threshold, nextremes=nextremes, datvar=datvar,
                      xiFrhs=xiFrhs, nuFrhs=nuFrhs, init=init, niter=niter,
                      include.updates=include.updates, epsxi=epsxi, epsnu=epsnu,
-                     progress=if(!boot.progress) FALSE else progress,
+                     progress=if(!boot.progress) FALSE else progress, adjust=adjust,
                      verbose=if(!boot.progress) FALSE else verbose, ...)
 
     ## progress
@@ -468,6 +484,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                              niter=niter, include.updates=include.updates,
                              epsxi=epsxi, epsnu=epsnu,
                              progress=if(!boot.progress) FALSE else progress,
+                             adjust=adjust,
                              verbose=if(!boot.progress) FALSE else verbose, ...)
 
         ## progress
