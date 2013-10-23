@@ -351,6 +351,16 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     nu <- param.new[,"nu"] # fitted nu's
     beta <- exp(nu)/(1+xi) # corresponding (fitted) beta
 
+    ## check beta for being a valid reparameterization (otherwise pGPD() fails)
+    ## note: nu can be too small (=> beta = 0) or xi <= -1
+    ##       => set corresponding beta to NA
+    ii <- is.finite(beta) & beta > 0
+    beta[!ii] <- NA
+
+    ## compute the residuals
+    resi <- mapply(function(x, xi, beta) if(!is.na(beta)) -log1p(-pGPD(x, xi=xi, beta=beta)) else NA,
+                   x=y.[,datvar], xi=xi, beta=beta)
+
     ## log-likelihood
     logL <- rlogL(y=y.[,datvar], xi=xi, nu=nu) # reparameterized log-likelihood (reparameterization doesn't matter, it's the same *value* as the original log-likelihood)
 
@@ -373,9 +383,6 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     x.nu <- x[,nu.covars, drop=FALSE] # all cols with covariates used for fitting nu
     all.covars.nu <- lapply(seq_len(ncol(x.nu)), function(j) sort(unique(x.nu[,j]))) # determine levels
     names(all.covars.nu) <- colnames(x.nu) # put in names
-
-    ## compute the residuals
-    resi <- mapply(function(x, xi, beta) -log1p(-pGPD(x, xi, beta)), x=y.[,datvar], xi=xi, beta=beta)
 
     ## build list
     res <- list(xi=xi, # estimated xi
