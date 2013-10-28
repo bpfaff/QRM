@@ -472,10 +472,8 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                   FUN=function(r) if(length(r)==1) r else
                         sample(r, size=length(r), replace=TRUE))
 
-        ## compute and put in corresponding excesses (see Chavez-Demoulin and Davison (2005))
-        ## Note: 1) they use a different reparameterization
-        ##       2) solve rr=log(1+xi*y/beta)/xi w.r.t. y
-        y. <- expm1(rr*xi)*beta/xi # reconstruct excesses from residuals
+        ## compute corresponding excesses
+        y. <- mapply(qGPD, p=-expm1(-rr), xi=xi, beta=beta) # reconstruct excesses from residuals
         x. <- data.frame(fit$covar, y=y.) # add excesses/covariates
 
         ## progress

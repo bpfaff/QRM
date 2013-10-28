@@ -14,7 +14,8 @@
 ## this program; if not, see <http://www.gnu.org/licenses/>.
 
 
-## GPD distribution function (fine for all q in IR, xi in IR, beta > 0)
+## GPD function (fine for all q in IR, xi in IR, beta > 0)
+## vectorized in q
 pGPD <- function(q, xi, beta = 1)
 {
     stopifnot(beta > 0)
@@ -25,15 +26,12 @@ pGPD <- function(q, xi, beta = 1)
     res
 }
 
+## quantile of the GPD function (fine for all p in [0,1], xi in IR, beta > 0)
+## vectorized in p
 qGPD <- function(p, xi, beta = 1){
-  if(xi == 0){
-    out <- qexp(p)
-  } else {
-    inner <- (1 / xi) * ((1 - p)^(-xi) - 1)
-    out <- pmax(inner, 0)
-    if (xi < 0) out <- pmin(inner, 1 / abs(xi))
-  }
-  beta * out
+    stopifnot(beta > 0)
+    p. <- pmax(pmin(p, 1), 0) # or not allow by stopifnot(0 <= p, p <= 1)? [rest still fine]
+    if(xi == 0) qexp(p., rate=1/beta) else (beta/xi)*((1-p.)^(-xi)-1) # p-quantile for xi != 0
 }
 
 rGPD <- function(n, xi, beta = 1) qGPD(runif(n), xi, beta)
