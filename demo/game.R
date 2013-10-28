@@ -112,7 +112,6 @@ if(FALSE){
 ### 2) Functions ###############################################################
 
 ## example functions for generating losses
-rGPD <- function(n, xi, beta) ((1-runif(n))^(-xi)-1)*beta/xi # sampling a GPD
 loss <- function(n, xi, beta, u) u + rGPD(n, xi=xi, beta=beta) # sampling losses
 
 
@@ -213,7 +212,8 @@ legend(0.06, 0.35, lty=c(1,2,0), pch=c(20,NA,1), bty="n", horiz=TRUE,
 ## y axis label
 plot.new()
 text(0.1, 0.5, srt=90,
-     labels=substitute(hat(lambda)~~"with pointwise asymptotic two-sided "*a.*"% confidence intervals", list(a.=1-a)))
+     labels=substitute(hat(lambda)~~"with pointwise asymptotic two-sided "*a.*"% confidence intervals",
+     list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
 
@@ -296,7 +296,8 @@ legend(0.18, 0.35, lty=c(1,2,0), pch=c(20,NA,1), bty="n", horiz=TRUE,
 ## y axis label
 plot.new()
 text(0.1, 0.5, srt=90,
-     labels=substitute(hat(xi)~~"with bootstrapped pointwise two-sided "*a.*"% confidence intervals", list(a.=1-a)))
+     labels=substitute(hat(xi)~~"with bootstrapped pointwise two-sided "*a.*"% confidence intervals",
+     list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
 
@@ -351,7 +352,8 @@ legend(0.18, 0.35, lty=c(1,2,0), pch=c(20,NA,1), bty="n", horiz=TRUE,
 ## y axis label
 plot.new()
 text(0.1, 0.5, srt=90,
-     labels=substitute(hat(beta)~~"with bootstrapped pointwise two-sided "*a.*"% confidence intervals", list(a.=1-a)))
+     labels=substitute(hat(beta)~~"with bootstrapped pointwise two-sided "*a.*"% confidence intervals",
+     list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
 
@@ -466,7 +468,8 @@ legend(0.1, 0.35, lty=c(1,2,0), pch=c(20,NA,1), bty="n", horiz=TRUE,
 ## y axis label
 plot.new()
 text(0.1, 0.5, srt=90,
-     labels=substitute(widehat(VaR)[a.]~~"with bootstrapped ptw. two-sided "*b*"% confidence intervals", list(a.=alpha, b=1-a)))
+     labels=substitute(widehat(VaR)[a.]~~"with bootstrapped ptw. two-sided "*b*"% confidence intervals",
+     list(a.=alpha, b=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
 
