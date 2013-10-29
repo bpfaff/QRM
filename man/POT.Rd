@@ -30,7 +30,8 @@ showRM(object, alpha, RM = c("VaR", "ES"),
        xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
        legend.pos = "topright", ...)
 findthreshold(data, ne)
-MEplot(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold", ylab = "Mean Excess", ...)
+MEplot(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold",
+       ylab = "Mean Excess", ...)
 xiplot(data, models = 30., start = 15., end = 500., reverse = TRUE,
        ci = 0.95, auto.scale = TRUE, labels = TRUE, table = FALSE, ...)
 hill(data, k, tail.index = TRUE)
