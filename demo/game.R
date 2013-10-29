@@ -31,7 +31,8 @@ n <- round(cbind(A = 2800 + 800 * sin(pi*seq(0.2, 1, length.out=nyrs)),
 rownames(n) <- yrs # set row names
 B <- 32 # number of bootstrap replications (rather small here)
 u <- 200 # threshold
-edof <- 2 # equivalent degrees of freedom (since s(..., fx=FALSE), this is not fixed)
+edof <- 3 # equivalent degrees of freedom
+## => note: by *not* specifying "fx=TRUE, k=edof+1, bs="cr" for fitting lambda, the fits are slightly better
 eps <- 0.005 # epsilon to determine convergence (speed up calculations)
 niter <- 32 # maximal number of iterations (speed up calculations)
 alpha <- 0.999 # confidence level
@@ -159,7 +160,10 @@ x.num <- x.num[order(x.num$group, x.num$year),] # sort (simplifies VaR computati
 ## => compare with n!
 
 ## fit lambda
-modlam <- gam(num ~ group + s(year, by=group) - 1, data=x.num, family=poisson)
+modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => bad fit
+              data=x.num, family=poisson)
+modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine
+              data=x.num, family=poisson)
 
 ## compute fitted and predicted values incl. pointwise asymptotic CIs
 lamFit <- get.lambda.fit(modlam)
@@ -227,13 +231,12 @@ sfile <- "game.rds"
 if(file.exists(sfile)){
     bootGPD <- readRDS(sfile) # read the bootstrapped object
 } else {
-    ## note: - see ?s -> by: In the factor 'by' variable case a replicate of the
-    ##                       smooth is produced for each factor level
+    ## note: - see ?s -> by: a replicate of the smooth is produced for each factor level
     ##       - this takes some minutes... get a coffee
     ##       - the result object will be stored in 'game.rds' in your working directory
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
-                          xiFrhs = ~ group + s(year, k=edof+1, bs="cr", by=group) - 1,
-                          nuFrhs = ~ group + s(year, k=edof+1, bs="cr", by=group) - 1,
+                          xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1,
+                          nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1,
                           niter=niter, epsxi=eps, epsnu=eps)
     saveRDS(bootGPD, file=sfile) # save the bootstrapped object
 }
@@ -423,6 +426,8 @@ xlim <- range(yrs)
 ylim <- c(min(VaR.fit$CI.low), max(VaR.fit$CI.up))
 
 ## layout
+doPDF <- TRUE
+if(doPDF) pdf("demo_VaR_0.999.pdf", width=9, height=5)
 layout.mat <- matrix(1:ngrp, ncol=ngrp, byrow=TRUE) # plot matrix layout
 layout.mat <- rbind(layout.mat, c(ngrp+1, ngrp+2)) # add plot regions for x axis label
 layout.mat <- cbind(c(ngrp+3, 0), layout.mat) # add plot regions for y axis label
@@ -436,6 +441,7 @@ for(j in 1:ngrp){
     ## predicted VaR
     plot(VaR.pred$year[jgrp], VaR.pred$predict[jgrp], type="l", log="y",
          xlim=xlim, ylim=ylim, yaxt=if(j%%2==1) "s" else "n")
+    ## if(j%%2==1) eaxis(2, at=10^1:5) # => requires sfsmisc
     ## CIs
     jgrp <- VaR.fit$group==grp[j] # group boolean in VaR.fit
     yr <- VaR.fit$year[jgrp]
@@ -472,5 +478,6 @@ text(0.1, 0.5, srt=90,
      list(a.=alpha, b=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
+if(doPDF) dev.off()
 
 
