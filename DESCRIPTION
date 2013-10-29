@@ -1,6 +1,6 @@
 Package: QRM
 Version: 0.4-10
-Date: 2013-04-07
+Date: 2013-10-29
 Title: Provides R-language Code to Examine Quantitative Risk Management Concepts
 Authors@R: c(person("Bernhard", "Pfaff", email = "bernhard@pfaffikus.de", role = c("aut", "cre")), person("Marius", "Hofert", email = "marius.hofert@math.ethz.ch", role = "ctb"), person("Alexander", "McNeil", email = "mcneil@math.ethz.ch", role = "aut", comment = "S-Plus original (QRMlib)"), person("Scott", "Ulmann", role = "trl", comment = "First R port as package QRMlib"))
 Depends: R (>= 2.10.0), gsl, Matrix, mvtnorm, numDeriv, timeSeries
