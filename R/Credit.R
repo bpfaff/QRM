@@ -108,10 +108,10 @@ fit.binomial <- function(M, m){
 ##
 fit.binomialBeta <- function(M, m, startvals = c(2, 2), ses = FALSE, ...){
   negloglik <- function(theta, defaults, trials){
-    length(trials) * base:::lbeta(theta[1]^2, theta[2]^2) - sum(base:::lbeta(theta[1]^2 + defaults, b = theta[2]^2 + trials - defaults))
+    length(trials) * base::lbeta(theta[1]^2, theta[2]^2) - sum(base::lbeta(theta[1]^2 + defaults, b = theta[2]^2 + trials - defaults))
   }
   truenegloglik <- function(theta, defaults, trials){
-    length(trials) * base:::lbeta(theta[1], theta[2]) - sum(base:::lbeta(theta[1] + defaults, theta[2] + trials - defaults))
+    length(trials) * base::lbeta(theta[1], theta[2]) - sum(base::lbeta(theta[1] + defaults, theta[2] + trials - defaults))
   }
   theta <- sqrt(startvals)
   fit <- optim(theta, negloglik, defaults = M, trials = m, ...)
