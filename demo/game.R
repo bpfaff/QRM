@@ -31,7 +31,7 @@ n <- round(cbind(A = 2800 + 800 * sin(pi*seq(0.2, 1, length.out=nyrs)),
 rownames(n) <- yrs # set row names
 B <- 32 # number of bootstrap replications (rather small here)
 u <- 200 # threshold
-edof <- 3 # equivalent degrees of freedom
+edof <- 3 # degrees of freedom
 ## => note: by *not* specifying "fx=TRUE, k=edof+1, bs="cr" for fitting lambda, the fits are slightly better
 eps <- 0.005 # epsilon to determine convergence (speed up calculations)
 niter <- 32 # maximal number of iterations (speed up calculations)
