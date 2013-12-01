@@ -162,7 +162,7 @@ x.num <- x.num[order(x.num$group, x.num$year),] # sort (simplifies VaR computati
 ## fit lambda
 modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => bad fit
               data=x.num, family=poisson)
-modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine
+modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
               data=x.num, family=poisson)
 
 ## compute fitted and predicted values incl. pointwise asymptotic CIs
@@ -235,8 +235,8 @@ if(file.exists(sfile)){
     ##       - this takes some minutes... get a coffee
     ##       - the result object will be stored in 'game.rds' in your working directory
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
-                          xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1,
-                          nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1,
+                          xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
+                          nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
                           niter=niter, epsxi=eps, epsnu=eps)
     saveRDS(bootGPD, file=sfile) # save the bootstrapped object
 }
