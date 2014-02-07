@@ -28,7 +28,7 @@ plotTail(object, ppoints.gpd = ppoints(256), main = "Estimated tail probabilitie
 showRM(object, alpha, RM = c("VaR", "ES"),
        like.num = 64, ppoints.gpd = ppoints(256),
        xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
-       legend.pos = "topright", ...)
+       legend.pos = "topright", pre.0.4.9=FALSE, ...)
 findthreshold(data, ne)
 MEplot(data, omit = 3., main = "Mean-Excess Plot", xlab = "Threshold",
        ylab = "Mean Excess", ...)
@@ -58,7 +58,11 @@ RiskMeasures(out, p)
   \item{k}{number (greater than or equal to 2) of order statistics used
            to compute the Hill plot.}
   \item{labels}{\code{logical}, whether axes shall be labelled.}
-  \item{legend.pos}{if not \code{\link{NULL}}, position of \code{\link{legend}()}.}
+  \item{legend.pos}{if not \code{\link{NULL}}, position of
+    \code{\link{legend}()}.}
+  \item{pre.0.4.9}{\code{logical}, whether behavior previous to version
+    0.4-9 applies (returning the risk measure estimate and confidence
+    intervals instead of just \code{invisible()}).}
   \item{like.num}{\code{integer}, count of evaluations of profile likelihood.}
   \item{main,xlab,ylab}{title, x axis and y axis labels.}
   \item{models}{\code{integer}, count of consecutive gpd models to be

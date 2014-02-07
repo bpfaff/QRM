@@ -186,14 +186,15 @@ plotTail <- function(object, ppoints.gpd = ppoints(256),
 ##' @param xlab x axis label
 ##' @param ylab y axis label
 ##' @param legend.pos position as accepted by legend() or NULL (no legend)
+##' @param pre.0.4.9 logical indicating whether 'old return behavior' applies
 ##' @param ... additional arguments passed to optim()
-##' @return invisible()
+##' @return invisible() or (if pre.0.4.9) confidence intervals
 ##' @author Marius Hofert
 ##' TODO: we should use optimize(), improve on nLL(), and use ... for plot!
 showRM <- function(object, alpha, RM = c("VaR", "ES"),
                    like.num = 64, ppoints.gpd = ppoints(256),
                    xlab = "Exceedances x", ylab = expression(1-hat(F)[n](x)),
-                   legend.pos = "topright", ...)
+                   legend.pos = "topright", pre.0.4.9=FALSE, ...)
 {
     ## checks
     stopifnot(0 < alpha, alpha < 1, like.num > 0)
@@ -267,10 +268,9 @@ showRM <- function(object, alpha, RM = c("VaR", "ES"),
                         substitute(RM.[a]~"CIs", list(a=alpha, RM.=RM)) )))
     }
 
-    ## ci <- smth$x[smth$y > object$ll.max - qchisq(0.95, df=1)/2]
-    ## c("Lower CI" = min(ci), "Estimate" = RM.hat, "Upper CI" = max(ci))
+    ci <- smth$x[smth$y > object$ll.max - qchisq(0.95, df=1)/2]
     ## return
-    invisible()
+    if(pre.0.4.9) c("Lower CI" = min(ci), "Estimate" = RM.hat, "Upper CI" = max(ci)) else invisible()
 }
 
 ## ME plot
