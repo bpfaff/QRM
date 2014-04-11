@@ -101,7 +101,9 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \code{gamGPDfit()} again.
 }
 \value{
-  \code{gamGPDfit()} returns a list with the components
+  \code{gamGPDfit()} returns either an empty list (\code{list()}; in
+  case at least one of the two \code{\link{gam}()} calls in the internal
+  function \code{gamGPDfitUp()} fails) or a list with the components
   \describe{
     \item{\code{xi}:}{estimated parameters \eqn{\xi}{xi};}
     \item{\code{beta}:}{estimated parameters \eqn{\beta}{beta};}
@@ -137,11 +139,12 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
       which contains \code{nuObj} as last element;}
   }
 
-  \code{gamGPDboot()} returns a list of length \code{B+1} where the
-  first component contains the results of
+  \code{gamGPDboot()} returns a list of length \code{B+1} where
+  the first component contains the results of
   the initial fit via \code{gamGPDfit()} and the other \code{B}
   components contain the results for each replication of the
-  post-blackend bootstrap.
+  post-blackend bootstrap. Components for which \code{\link{gam}()}
+  fails (e.g., due to too few data) are given as empty lists (\code{list()}).
 }
 \author{Marius Hofert, Valerie Chavez-Demoulin.}
 \references{

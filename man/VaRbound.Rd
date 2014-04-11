@@ -14,7 +14,7 @@ VaRbound(alpha, N, qmargins, bound = c("upper", "lower"), verbose = FALSE)
   \item{qmargins}{\code{\link{list}} containing the marginal quantile
     functions.}
   \item{bound}{\code{\link{character}} string indicating the VaR bound to
-    be approximated.}
+    be approximated (largest (default) or smallest).}
   \item{verbose}{\code{\link{logical}} indicating whether progress
     information is displayed.}
 }

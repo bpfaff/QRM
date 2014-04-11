@@ -84,8 +84,8 @@ risk.measure(x, alpha, u, method = c("VaR", "ES"))
   \describe{
     \item{\code{xi}:}{list with components
       \describe{
-	\item{\code{covar}:}{\code{\link{data.frame}} containing the
-	  unique/minimal covariate combinations for the covariates used
+	\item{\code{covar}:}{(possibly empty) \code{\link{data.frame}} containing
+	  the unique/minimal covariate combinations for the covariates used
 	  for fitting \eqn{\xi}{xi};}
 	\item{\code{fit}:}{corresponding fitted \eqn{\xi}{xi};}
 	\item{\code{CI.low}:}{lower confidence interval (bootstrapped

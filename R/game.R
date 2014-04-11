@@ -185,13 +185,14 @@ adjustD <- function(x, order, verbose=TRUE)
 ##'        the excesses
 ##' @param adjust logical indicating whether non-real values of the derivatives are adjusted
 ##' @param verbose logical indicating whether warnings about adjustments of
-##'        the derivatives and wrong arguments in DrlogL() are printed
+##'        the derivatives, wrong arguments in DrlogL() and failed gam() calls are printed
 ##' @param ... additional arguments passed to gam()
 ##' @return a list of length four containing
 ##'         element 1 (xi): object of class gamObject for xi as returned by mgcv::gam()
 ##'         element 2 (nu): object of class gamObject for nu as returned by mgcv::gam()
 ##'         element 3 (xi.weights): weights associated with xi
 ##'         element 4 (nu.weights): weights associated with nu
+##'         or list() (in case gam() or the Newton step failed)
 ##' @author Marius Hofert
 ##' Note: That's a helper function of gamGPDfit()
 gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TRUE, ...)
@@ -205,7 +206,9 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
     nu <- xi.nu[,2]
 
     ## compute one Newton step in xi
-    DrLL <- DrlogL(y[,yname], xi=xi, nu=nu, adjust=adjust, verbose=verbose) # (n1,4) matrix
+    DrLL <- tryCatch(DrlogL(y[,yname], xi=xi, nu=nu, adjust=adjust, verbose=verbose), # (n1,4) matrix
+                     error=function(e) e)
+    if(is(DrLL, "simpleError")) return(list())
     rl.xi <- DrLL[,"rl.xi"] # score in xi
     rl.xixi. <- DrLL[,"rl.xixi"] # -weight
     Newton.xi <- xi - rl.xi / rl.xixi. # Newton step
@@ -215,14 +218,21 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
         stop("y is not allowed to have a column named 'Newton.xi'")
     y. <- cbind(y, Newton.xi=Newton.xi, rl.xixi.=rl.xixi.)
     xi.formula <- update(xiFrhs, Newton.xi~.) # build formula Newton.xi ~ xiFrhs
-    xi.obj <- gam(xi.formula, data=y., weights=-rl.xixi., ...) # updated xi object of type gamObject
+    ## note: the following tryCatch() was used to avoid the error
+    ##       "no valid set of coefficients has been found: please supply starting values"
+    ##       when using gamGPDboot() is called with a small sample size
+    xi.obj <- tryCatch(gam(xi.formula, data=y., weights=-rl.xixi., ...),
+                       error=function(e) e) # updated xi object of type gamObject
+    if(is(xi.obj, "simpleError")) return(list())
+    ## warning("gam() produced the error:", conditionMessage(xi.obj), " when fitting xi; propagate list() as result")
 
     ## build fitted (xi) object and check
     xi.fit <- fitted(xi.obj)
-    if((n. <- length(xi.fit)) != n) stop("After introducing adjustD(), this error should not appear anymore")
 
     ## compute one Newton step in nu (for given new xi)
-    DrLL <- DrlogL(y[,yname], xi=xi.fit, nu=nu, adjust=adjust, verbose=verbose) # (n1,4) matrix
+    DrLL <- tryCatch(DrlogL(y[,yname], xi=xi.fit, nu=nu, adjust=adjust, verbose=verbose), # (n1,4) matrix
+                     error=function(e) e)
+    if(is(DrLL, "simpleError")) return(list())
     rl.nu <- DrLL[,"rl.nu"] # score in nu
     rl.nunu. <- DrLL[,"rl.nunu"] # -weight
     Newton.nu <- nu - rl.nu / rl.nunu. # Newton step
@@ -232,10 +242,14 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
         stop("y is not allowed to have a column named 'Newton.nu'")
     y. <- cbind(y, Newton.nu=Newton.nu, rl.nunu.=rl.nunu.)
     nu.formula <- update(nuFrhs, Newton.nu~.) # build formula Newton.nu ~ nuFrhs
-    nu.obj <- gam(nu.formula, data=y., weights=-rl.nunu., ...) # updated nu object of type gamObject
+    nu.obj <- tryCatch(gam(nu.formula, data=y., weights=-rl.nunu., ...),
+                       error=function(e) e) # updated nu object of type gamObject
+    if(is(nu.obj, "simpleError")) return(list())
+    ## warning("gam() produced the error:", conditionMessage(nu.obj), " when fitting nu; propagate list() as result")
 
     ## return list of two gamObject objects (for xi, nu)
-    list(xi=xi.obj, nu=nu.obj, xi.weights=-rl.xixi., nu.weights=-rl.nunu.) # note: the naming (xi, nu) is not ideal but guarantees that colnames(param.old) = colnames(param.new) in gamGPDfit
+    list(xi=xi.obj, nu=nu.obj, xi.weights=-rl.xixi., nu.weights=-rl.nunu.)
+    ## naming (xi, nu) not ideal but guarantees colnames(param.old) = colnames(param.new) in gamGPDfit()
 }
 
 
@@ -264,7 +278,7 @@ gamGPDfitUp <- function(y, xi.nu, xiFrhs, nuFrhs, yname, adjust=TRUE, verbose=TR
 ##' @param verbose logical passed to gamGPDfitUp() (thus to DrlogL() and
 ##'        adjustD())
 ##' @param ... additional arguments passed to gam() (called by gamGPDfitUp())
-##' @return a list; see below
+##' @return a list (see below) or list() (in case gam() or the Newton step in gamGPDfitUp() failed)
 ##' @author Marius Hofert
 gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
                       init = fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
@@ -303,24 +317,24 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
     while(TRUE){
 
         ## update/fit parameters (xi, nu)
-        param.old <- if(iter==1){
+        param.old <- if(iter==1)
             matrix(rep(c(xi.init, nu.init), each=n.ex), ncol=2,
                        dimnames=list(rownames(y.), c("xi", "nu"))) # (n.ex,2)-matrix with cols "xi" and "nu"
-        } else{
-            param.new
-        }
+        else param.new
         updates[[iter]] <- gamGPDfitUp(y., xi.nu=param.old,
                                        xiFrhs=xiFrhs, nuFrhs=nuFrhs,
-                                       yname=datvar, adjust=adjust, verbose=verbose, ...) # returns a list of two gam() objects containg the fitted (xi, nu)
-        param.new <- sapply(updates[[iter]][c("xi", "nu")], fitted)
-        ## note: param.old and param.new have the same rownames/colnames
+                                       yname=datvar, adjust=adjust, verbose=verbose, ...) # returns a list of two gam() objects containing the fitted (xi, nu) (or list() in case a gam() call fails)
 
-        ## check
-        if(any(dim(param.new)!=dim(param.old))) stop("gamGPDfitUp() returned an updated gamObject object of wrong dimension")
-        if(progress){
-            conv <- sapply(updates[[iter]][c("xi", "nu")], function(x) x$converged) # convergence status for (xi, nu)
-            if(any(!conv)) warning("gam() in gamGPDfitUp() did not converge for ", paste(c("xi","nu")[!conv], collapse=", "))
-        }
+        ## check whether gam() calls failed
+        if(!length(updates[[iter]])) return(list()) # one or both gam() calls in gamGPDfitUp() failed
+        ## check convergence status of gam() in gamGPDfitUp()
+        conv <- sapply(updates[[iter]][c("xi", "nu")], function(x) x$converged)
+        if(any(!conv))
+            warning("gam() in gamGPDfitUp() did not converge for ", paste(c("xi","nu")[!conv], collapse=", "))
+        ## check parameter dimensions (param.old and param.new have same rownames/colnames)
+        param.new <- sapply(updates[[iter]][c("xi", "nu")], fitted)
+        if(any(dim(param.new)!=dim(param.old)))
+            stop("gamGPDfitUp() returned an updated gamObject object of wrong dimension")
 
         ## tracing
         MRD.. <- colMeans(abs((param.old-param.new)/param.old)) # mean relative distance for (xi, nu)
@@ -430,7 +444,8 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 ##' @param ... see gamGPDfit()
 ##' @return a list of length B+1, the first component being the fitted object
 ##'         as returned by gamGPDfit(); the other components contain similar
-##'         objects based on the B bootstrap replications.
+##'         objects based on the B bootstrap replications, but can be list() in case
+##'         gamGPDfit() reports it (see there)
 ##' @author Marius Hofert
 gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                        init=fit.GPD(x[,datvar], threshold=threshold, type="pwm", verbose=FALSE)$par.ests,
@@ -452,6 +467,9 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                      include.updates=include.updates, epsxi=epsxi, epsnu=epsnu,
                      progress=if(!boot.progress) FALSE else progress, adjust=adjust,
                      verbose=if(!boot.progress) FALSE else verbose, ...)
+    ## => can be list() (if gam() in gamGPDfitUp() failed)
+    if(!length(fit))
+        stop("gamGPDfit() reported that gam() in gamGPDfitUp() failed in the major fit (already)")
 
     ## progress
     if(boot.progress) if(progress) cat("\n") else setTxtProgressBar(pb, 1)
@@ -491,6 +509,7 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
                              progress=if(!boot.progress) FALSE else progress,
                              adjust=adjust,
                              verbose=if(!boot.progress) FALSE else verbose, ...)
+        ## => can be list() (if gam() in gamGPDfitUp() failed)
 
         ## progress
         if(boot.progress) if(progress) cat("\n") else setTxtProgressBar(pb, b+1)
@@ -592,8 +611,8 @@ lambda.predict <- function(x, newdata=NULL, alpha=0.05)
 ##' @param alpha significance level
 ##' @return a list with components
 ##'         xi:   a list with components
-##'               covar:  a data.frame containing the 'minimal' covariate combinations
-##'                       for the covariates used for fitting xi
+##'               covar:  a data.frame (possibly data.frame()) containing the 'minimal'
+##'                       covariate combinations for the covariates used for fitting xi
 ##'               fit:    corresponding fitted xi's
 ##'               CI.low: corresponding lower CIs
 ##'               CI.up:  corresponding upper CIs
@@ -605,56 +624,81 @@ lambda.predict <- function(x, newdata=NULL, alpha=0.05)
 ##'       here (and thus only have CIs for the fitted values)
 get.GPD.fit <- function(x, alpha=0.05)
 {
-    ## basic check (B = number of bootstrap replicates; nr = number of rows of the data set
-    ## provided to gamGPDboot())
-    xi.mat.   <- sapply(x, `[[`, "xi") # pick out all B+1 vectors of xi; (nr, B+1) matrix
-    beta.mat. <- sapply(x, `[[`, "beta") # pick out all B+1 vectors of beta; (nr, B+1) matrix
-    stopifnot(dim(xi.mat.)==dim(beta.mat.))
+    if(length(x[[1]])==0)
+        stop("length(x[[1]]) must be > 0; otherwise, already the fitting step in gamGPDboot() failed")
+    ## => x[[1]] serves as a role model (for the minimized grid of covariate combinations)
+    x. <- x[sapply(x, length) > 0] # pick out non-empty (= non-failed gam()) sublists
+    l. <- length(x.)
+    if(l. == 0) stop("no non-failed fitted object available")
+    l <- length(x)
+    if(l. != l)
+        warning("found ", l-l.," list() in x (failed fits); those (resampled) cases will be discarded")
+    ## => guarantees that xi.mat. etc. are indeed matrices
 
-    ## Note: Now these matrices typically have a huge number of rows nr. For each
-    ##       combination of covariates, they contain the same fitted value for
-    ##       each loss. This is 'overhead' we don't want. We therefore now pick
-    ##       out the fitted values for each unique combination of covariates which was
-    ##       originally used for fitting.
+    ## Note: 1) The matrices xi.mat. and beta.mat. below typically have a huge number of rows nr.
+    ##          For each combination of covariates, they contain the same fitted value for
+    ##          each excess. This is 'overhead' we don't want. We therefore now pick
+    ##          out the fitted values for each unique combination of covariates which was
+    ##          originally used for fitting.
+    ##       2) We first consider beta, since that consists of the largest number of covars
+    ##          (by having those of xi *and* nu)
 
-    ## determine the minimal grid which contains all *available* combinations of
-    ## covars used for fitting xi and nu (and beta) but not more
-    ## (in particular not for each excess)
-    covars. <- x[[1]]$covar # 'long' version (covariate combination for each excesses, too)
-    covar.nms <- if(length(covars.)>0) names(covars.) else "1" # names of covariates used for fitting xi and nu (or "1" if not depending on covariates)
-    y <- cbind(covars., index=seq_len(nrow(covars.))) # dummy data set ('long' version)
-    frml <- as.formula(paste("index ~", paste(rev(covar.nms), collapse=" + "))) # formula [with reverted covariates to guarantee the same sorting order of rows (cols are then reverted but we don't care here)]
-    covar.index <- aggregate(frml, data=y, FUN=function(z) z[1])[,"index"] # = 1 if y is list()
-    covars <- if(length(covar.index)==1) NULL else y[covar.index, covar.nms, drop=FALSE] # 'minimal' version (or NULL for no covariates)
+    ## determine the minimal grid which only contains all *available* combinations of
+    ## covars used for fitting xi and nu (and thus *beta*) [in particular not for each excess]
 
-    ## determine further minimalized version for xi (possibly less combinations than beta)
-    xi.covars. <- x[[1]]$xi.covar
-    xi.covar.nms <- if(length(xi.covars.)>0) names(xi.covars.) else "1" # names of covariates used for fitting xi (or "1" if not depending on covariates)
-    xi.frml <- as.formula(paste("index ~", paste(rev(xi.covar.nms), collapse=" + "))) # formula [see above]
-    xi.covar.index <- aggregate(xi.frml, data=y, FUN=function(z) z[1])[,"index"] # pick out only first value (they are equal anyways)
-    xi.covars <- if(length(xi.covar.index)==1) NULL else y[xi.covar.index, xi.covar.nms, drop=FALSE] # 'minimal' version (or NULL for no covariates)
+    ## x.[[1]] is the role model; this is the 'long' version (covariate combination for each excesses)
+    covars. <- x.[[1]]$covar
+    if(length(covars.) == 0) { # neither xi nor nu (thus beta) depend on covariates
+        covar.index <- 1
+        covars <- data.frame()
+    } else { # at least one of xi or nu has covariates => minimize to unique covariate combinations
+        covar.nms <- names(covars.) # names of covariates used for fitting xi and nu (thus beta)
+        y <- cbind(x.[[1]]$covar, index=seq_len(nrow(covars.))) # append index ('long' version)
+        frml <- as.formula(paste("index ~", paste(rev(covar.nms), collapse=" + "))) # formula [with reverted covariates to guarantee the same sorting order of rows (cols are then reverted but we don't care here)]
+        covar.index <- aggregate(frml, data=y, FUN=function(z) z[1])[,"index"] # pick out only first value (they are equal anyways)
+        covars <- y[covar.index, covar.nms, drop=FALSE] # minimal version
+        rownames(covars) <- NULL
+    }
+
+    ## now consider xi
+    xi.covars. <- x.[[1]]$xi.covar
+    if(length(xi.covars.) == 0) {
+        xi.covar.index <- 1
+        xi.covars <- data.frame()
+    } else { # xi has at least one covariate => minimize to unique covariate combinations
+        xi.covar.nms <- names(xi.covars.) # names of covariates used for fitting xi
+        xi.frml <- as.formula(paste("index ~", paste(rev(xi.covar.nms), collapse=" + ")))
+        xi.covar.index <- aggregate(xi.frml, data=y, FUN=function(z) z[1])[,"index"] # pick out only first value (they are equal anyways)
+        xi.covars <- y[xi.covar.index, xi.covar.nms, drop=FALSE] # minimal version
+        rownames(xi.covars) <- NULL
+    }
 
     ## determine fitted values for each covariate combination in (the 'minimalized') covars
-    xi.mat <- xi.mat.[xi.covar.index,, drop=FALSE] # minimal number of rows
-    rownames(xi.mat) <- NULL
-    beta.mat <- beta.mat.[covar.index,, drop=FALSE] # minimal number of rows
-    rownames(beta.mat) <- NULL
+    ## pick out all (max. B+1) vectors of estimated xi/beta; (nr, <= B+1) matrix
+    xi.mat. <- sapply(x., `[[`, "xi")
+    xi.mat <- xi.mat.[xi.covar.index, , drop=FALSE]
+    rownames(xi.mat) <- NULL; colnames(xi.mat) <- NULL
+    beta.mat. <- sapply(x., `[[`, "beta")
+    beta.mat <- beta.mat.[covar.index, , drop=FALSE]
+    rownames(beta.mat) <- NULL; colnames(beta.mat) <- NULL
+
     ## compute CIs (derived from fitted values + bootstrapped ones)
-    ## 'na.rm=TRUE' is for those covariate combinations where there is no data (=> the whole row is NA)
+    ## 'na.rm=TRUE' is for those covariate combinations where there is no data
+    ## (=> the whole row is NA)
     xi.CI   <- t(apply(xi.mat, 1, quantile, probs=c(alpha/2, 1-alpha/2), na.rm=TRUE, names=FALSE)) # CIs (low, up) for xi; (nrow(xi.mat), 2) matrix
     beta.CI <- t(apply(beta.mat, 1, quantile, probs=c(alpha/2, 1-alpha/2), na.rm=TRUE, names=FALSE)) # CIs (low, up) for beta; (nrow(beta.mat), 2) matrix
 
-    ## result
-    list(xi   = list(covar  = xi.covars, # covariate combinations used for fitting (or NULL)
+    ## result (note: beta depends on xi and nu => on all covariates)
+    list(xi   = list(covar  = xi.covars, # covariate combinations used for fitting (or data.frame())
                      fit    = xi.mat[,1], # fitted xi
                      CI.low = xi.CI[,1], # lower CI
                      CI.up  = xi.CI[,2], # upper CI
-                     boot   = xi.mat[,-1]), # bootstrapped xi's
-         beta = list(covar  = covars, # covariate combinations used for fitting (or NULL)
+                     boot   = if(ncol(xi.mat) > 1) xi.mat[,-1] else NULL), # bootstrapped xi's
+         beta = list(covar  = covars, # covariate combinations used for fitting (or data.frame())
                      fit    = beta.mat[,1], # fitted beta
                      CI.low = beta.CI[,1], # lower CI
                      CI.up  = beta.CI[,2], # upper CI
-                     boot   = beta.mat[,-1])) # bootstrapped beta's
+                     boot   = if(ncol(beta.mat) > 1) beta.mat[,-1] else NULL)) # bootstrapped beta's
 }
 
 ##' @title Compute Predicted GPD Parameters xi and beta
@@ -679,20 +723,16 @@ GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
 {
     ## default for xi.newdata and beta.newdata
     if(is.null(xi.newdata)) { # choose useful default (covariates used for fitting but *all* combis of such)
-        xi.newdata <- if(length(x[[1]]$xi.covar)>0) {
+        xi.newdata <- if(length(x[[1]]$xi.covar)>0)
             expand.grid(rev(x[[1]]$xi.covar))[,rev(seq_len(length(x[[1]]$xi.covar))), drop=FALSE]
-        } else {
-            data.frame(xi.dummy.covar=1)
-        }
+        else data.frame(xi.dummy.covar=1)
     }
     if(is.null(beta.newdata)) {
         fulllist <- c(x[[1]]$xi.covar, x[[1]]$nu.covar) # some may be duplicate
         sublist <- fulllist[unique(names(fulllist))] # pick out maximal unique subset
-        beta.newdata <- if(length(x[[1]]$xi.covar)>0 || length(x[[1]]$nu.covar)>0) {
+        beta.newdata <- if(length(x[[1]]$xi.covar)>0 || length(x[[1]]$nu.covar)>0)
             expand.grid(rev(sublist))[,rev(seq_len(length(sublist))), drop=FALSE] # build grid
-        } else {
-            data.frame(beta.dummy.covar=1)
-        }
+        else data.frame(beta.dummy.covar=1)
     }
 
     ## check xi.newdata and beta.newdata (true for the default)

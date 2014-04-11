@@ -32,7 +32,8 @@ oppositely.order <- function(x)
 ##' @param alpha confidence level
 ##' @param N tail discretization parameter
 ##' @param qmargins list of marginal quantile functions
-##' @param bound character string indicating the VaR bound
+##' @param bound character string indicating the VaR bound to
+##'        be approximated (largest (default) or smallest)
 ##' @param verbose logical indicating whether progress information is displayed
 ##' @return lower and upper bounds for the (lower or upper) VaR bound
 ##' @author Marius Hofert
@@ -82,7 +83,7 @@ VaRbound <- function(alpha, N, qmargins, bound = c("upper", "lower"), verbose = 
 
     ## step 7
     switch(bound,
-           "lower" = c(lower=max(rowSums(X..)), upper=max(rowSums(Y..))),
-           "upper" = c(lower=min(rowSums(X..)), upper=min(rowSums(Y..))),
+           "lower" = c(lower=max(rowSums(X..)), upper=max(rowSums(Y..))), # lower and upper bounds for the smallest VaR
+           "upper" = c(lower=min(rowSums(X..)), upper=min(rowSums(Y..))), # lower and upper bounds for the largest VaR
            stop("wrong argument 'bound'"))
 }
