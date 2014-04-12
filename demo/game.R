@@ -233,16 +233,16 @@ if(file.exists(sfile)){
 } else {
     ## note: - see ?s -> by: a replicate of the smooth is produced for each factor level
     ##       - this takes some minutes... get a coffee
-    ##       - the result object will be stored in 'game.rds' in your working directory
+    ##       - the result object will be stored in 'game.rds' in your working directory (~ 800MB!)
     bootGPD <- gamGPDboot(x, B=B, threshold=u, datvar="loss",
                           xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
                           nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
-                          niter=niter, epsxi=eps, epsnu=eps)
-    saveRDS(bootGPD, file=sfile) # save the bootstrapped object
+                          niter=niter, eps.xi=eps, eps.nu=eps)
+    saveRDS(bootGPD, file=sfile) # save the bootstrapped object (takes some min, too!)
 }
 
 ## compute fitted values of xi, beta and CIs (pointwise bootstrapped)
-xibetaFit <- get.GPD.fit(bootGPD, alpha=a)
+xibetaFit <- get.GPD.fit(bootGPD, alpha=a) # several s
 
 ## compute predicted values
 xibetaPred <- GPD.predict(bootGPD)

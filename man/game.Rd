@@ -17,12 +17,12 @@
 gamGPDfit(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
           init = fit.GPD(x[,datvar], threshold = threshold,
                          type = "pwm", verbose = FALSE)$par.ests,
-          niter = 32, include.updates = FALSE, epsxi = 1e-05, epsnu = 1e-05,
+          niter = 32, include.updates = FALSE, eps.xi = 1e-05, eps.nu = 1e-05,
           progress = TRUE, adjust = TRUE, verbose = FALSE, \dots)
 gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
            init = fit.GPD(x[,datvar], threshold = threshold,
                           type = "pwm", verbose = FALSE)$par.ests,
-           niter = 32, include.updates = FALSE, epsxi = 1e-5, epsnu = 1e-5,
+           niter = 32, include.updates = FALSE, eps.xi = 1e-5, eps.nu = 1e-5,
            boot.progress = TRUE, progress = FALSE, adjust = TRUE, verbose = FALSE,
            debug = FALSE, \dots)
 }
@@ -47,8 +47,8 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   \item{include.updates}{\code{\link{logical}} indicating whether
   updates for xi and nu are returned as well (note: this might lead to
   objects of large size).}
-  \item{epsxi}{epsilon for stop criterion for \eqn{\xi}{xi}.}
-  \item{epsnu}{epsilon for stop criterion for \eqn{\nu}{nu}.}
+  \item{eps.xi}{epsilon for stop criterion for \eqn{\xi}{xi}.}
+  \item{eps.nu}{epsilon for stop criterion for \eqn{\nu}{nu}.}
   \item{boot.progress}{\code{\link{logical}} indicating
     whether progress information about \code{gamGPDboot()} is displayed.}
   \item{progress}{\code{\link{logical}} indicating whether progress information about
@@ -185,7 +185,7 @@ x <- data.frame(covar=covar, time=time, value=value)
 eps <- 1e-3 # to decrease the run time for this example
 require(mgcv) # due to s()
 fit <- gamGPDfit(x, threshold=u, datvar="value", xiFrhs=~covar+s(time)-1,
-                 nuFrhs=~covar+s(time)-1, epsxi=eps, epsnu=eps)
+                 nuFrhs=~covar+s(time)-1, eps.xi=eps, eps.nu=eps)
 ## note: choosing s(..., bs="cr") will fit cubic splines
 
 ## grab the fitted values per group and year
