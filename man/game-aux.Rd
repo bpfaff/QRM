@@ -93,7 +93,8 @@ risk.measure(x, alpha, u, method = c("VaR", "ES"))
 	\item{\code{CI.up}:}{upper confidence interval (bootstrapped
 	  pointwise two-sides 1-\eqn{\alpha}{alpha});}
 	\item{\code{boot}:}{\code{\link{matrix}} containing the
-	  corresponding bootstrapped \eqn{\xi}{xi}'s;}
+	  corresponding bootstrapped \eqn{\xi}{xi}'s (or \code{NULL} if
+          none of the bootstrap repetitions worked).}
 	}}
     \item{\code{beta}:}{similar as for \code{xi}.}
   }
@@ -110,6 +111,18 @@ risk.measure(x, alpha, u, method = c("VaR", "ES"))
   }
 
   \code{risk.measure()} returns a vector of values of the selected risk measure.
+}
+\details{
+  Note that if \code{\link{gam}()} fails in \code{gamGPDfit()} or the
+  fitting or one of the bootstrap replications in \code{gamGPDboot()},
+  then \code{x} contains (an) empty (sub)list(s). These empty lists will
+  be removed from the output of \code{get.GPD.fit()}. Hence, the
+  subcomponent \code{xi$fit} of the output of \code{get.GPD.fit()} can
+  contain less columns than the chosen number of bootstrap replications
+  for creating \code{x} (each bootstrap replication with failed
+  \code{\link{gam}()} calls is omitted). If there is any such failure,
+  \code{get.GPD.fit()} outputs a warning. These
+  failures typically happen for too small sample sizes.
 }
 \author{Marius Hofert}
 \references{
