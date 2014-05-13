@@ -158,20 +158,11 @@ seMPP.negloglik <- function(theta, PP, case, markdens){
 }
 ##
 volfunction <- function(anytimes, times, marks, theta, model){
-  nVecLength = length(anytimes)
-  nevents = length(times)
-  vector = rep(0,nVecLength)
-  tempobj <- .C("SEprocExciteFunc",
-                as.integer(nVecLength),
-                as.double(anytimes),
-                as.integer(nevents),
-                as.double(times),
-                as.double(marks),
-                as.double(theta),
-                as.integer(model),
-                result = as.double(vector),
-                PACKAGE="QRM")$result
-  return(tempobj)
+    SEprocExciteFunc(as.vector(anytimes),
+                     as.vector(times),
+                     as.vector(marks),
+                     as.numeric(theta),
+                     as.integer(model))
 }
 ##
 plot.sePP <- function(x, ...){
@@ -184,9 +175,10 @@ plot.sePP <- function(x, ...){
   case <- x$case
   anytimes <- starttime:endtime
   voltheta <- theta[-c(1, 2)]
-  evol <- volfunction(anytimes, times, marks, voltheta, case)
-  intensity <- theta[1] + theta[2] * evol
-  plot(anytimes, intensity, type = "l", xlim = range(starttime, endtime), xlab = "Time", ylab = "Intensity",...)
+  evol <- volfunction(times, times, marks, voltheta, case)
+  intensity <- rep(0, length(anytimes))
+  intensity[which(anytimes %in% times, arr.ind = TRUE)]  <- theta[1] + theta[2] * evol
+  plot(anytimes, intensity, type = "l", xlim = range(starttime, endtime), xlab = "Time", ylab = "Intensity")
   abline(h = length(times) / (endtime - starttime))
   return(invisible(list(times = anytimes, intensity = intensity)))
 }
