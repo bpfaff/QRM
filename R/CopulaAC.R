@@ -114,15 +114,9 @@ rstable <- function(n, alpha, beta = 1){
   term2 <- ((cos(alpha * t0 + (alpha - 1) * Theta)) / W)^((1 - alpha) / alpha)
   term1 * term2
 }
-## FRank Mix
+## Frank Mix
 rFrankMix <- function(n, theta){
-  output <- rep(0, n)
-  tmp <- .C("frank",
-            as.integer(n),
-            as.double(theta),
-            res= as.double(output),
-            PACKAGE="QRM")$res
-    return(tmp)
+    rfrank(n, theta)
 }
 ## BB9 Mix
 rBB9Mix <- function(n, theta){
