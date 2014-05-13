@@ -12,6 +12,8 @@
 \alias{sePP.negloglik}
 \alias{seMPP.negloglik}
 \alias{volfunction}
+\alias{SEprocExciteFunc}
+
 
 \title{Point Processes}
 
