@@ -13,6 +13,7 @@
 \alias{rcopula.Gumbel2Gp}
 \alias{rcopula.GumbelNested}
 \alias{fit.AC}
+\alias{rfrank}
 
 \title{Archimedean Copulae}
 
