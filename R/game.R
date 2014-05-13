@@ -22,10 +22,11 @@
 ##      xi        -kappa                kappa                    xi
 ##    beta         sigma                sigma                 sigma
 ##      nu            nu                  eta                    --
-## 2) GPD(xi in IR, beta > 0) distribution function (same as in ismev; up to notation):
+## 2) GPD(xi in IR, beta > 0) distribution function (same as in ismev + EKM; up to notation):
 ##    G_{xi,beta}(x) = 1-(1+xi*x/beta)^(-1/xi) if xi!=0
 ##                   = 1-exp(-x/beta)          if xi =0
 ##    x>=0 when xi>=0 and x in [0,-beta/xi] when xi<0
+##    Note: in EKM, x ~> (x-nu)/beta (with the same meaning of beta)
 ## 3) GPD(xi, beta) density for xi>0:
 ##    g_{xi,beta}(x) = (1+xi*x/beta)^(-(1+1/xi))/beta if x>0
 
@@ -768,7 +769,7 @@ GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
 
 ### Computing risk measures ####################################################
 
-##' @title Compute Value-at-Risk or Expected Shortfall
+##' @title Compute Value-at-Risk or Expected Shortfall for a GPD
 ##' @param x matrix with three columns containing lambda, xi, and beta
 ##' @param alpha confidence level
 ##' @param u threshold
@@ -788,9 +789,9 @@ risk.measure <- function(x, alpha, u, method=c("VaR", "ES")){
            "ES"={
                ES <- (risk.measure(cbind(lambda, xi, beta),
                                    alpha=alpha, u=u, method="VaR")+beta-xi*u)/(1-xi)
-               ## adjust to be Inf if xi > 1 (i.e., ES < 0)
+               ## adjust to be Inf if xi >= 1 (i.e., ES < 0)
                ## that's a convention, see p. 79 Coles (2001)
-               if(any(xi > 1)) ES[xi > 1] <- Inf
+               if(any(xi >= 1)) ES[xi >= 1] <- Inf
                ES
            },
            stop("wrong method"))
