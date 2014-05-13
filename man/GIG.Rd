@@ -3,6 +3,7 @@
 \alias{EGIG}
 \alias{ElogGIG}
 \alias{rGIG}
+\alias{rgig}
 
 \title{Generalized Inverse Gaussian Distribution}
 
