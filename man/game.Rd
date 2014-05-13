@@ -162,8 +162,6 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
   Risk losses depending on covariates.
 }
 \examples{
-### Example 1: fitting capability ##############################################
-
 ## generate an example data set
 years <- 2003:2012 # years
 nyears <- length(years)

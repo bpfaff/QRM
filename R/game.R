@@ -330,7 +330,10 @@ gamGPDfit <- function(x, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
                                        yname=datvar, adjust=adjust, verbose=verbose, ...) # returns a list of two gam() objects containing the fitted (xi, nu) (or list() in case a gam() call fails)
 
         ## check whether gam() calls failed
-        if(!length(updates[[iter]])) return(list()) # one or both gam() calls in gamGPDfitUp() failed
+        if(!length(updates[[iter]])) {
+            warning("gam() call(s) failed, will return list()")
+            return(list()) # one or both gam() calls in gamGPDfitUp() failed
+        }
         ## check convergence status of gam() in gamGPDfitUp()
         conv <- sapply(updates[[iter]][c("xi", "nu")], function(x) x$converged)
         if(any(!conv))
