@@ -28,7 +28,7 @@ import(timeSeries)
 ## importFrom
 importFrom("gsl", psi)
 importFrom("mgcv", gam, s)
-
+importFrom(Rcpp, evalCpp)
 
 ### exports ####################################################################
 
