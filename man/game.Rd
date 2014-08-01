@@ -153,13 +153,14 @@ gamGPDboot(x, B, threshold, nextremes = NULL, datvar, xiFrhs, nuFrhs,
 }
 \author{Marius Hofert, Valerie Chavez-Demoulin.}
 \references{
-  Chavez-Demoulin, V., and Davison, A. C. (2005),
-  Generalized additive models for sample extremes,
+  Chavez-Demoulin, V., and Davison, A. C. (2005).
+  Generalized additive models for sample extremes.
   \emph{Applied Statistics} \bold{54}(1), 207--222.
 
-  Chavez-Demoulin, V., Embrechts, P., and Hofert, M.,
+  Chavez-Demoulin, V., Embrechts, P., and Hofert, M. (2014).
   An extreme value approach for modeling Operational
   Risk losses depending on covariates.
+  \emph{Journal of Risk and Insurance}; accepted.
 }
 \examples{
 ## generate an example data set

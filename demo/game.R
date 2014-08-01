@@ -238,11 +238,11 @@ if(file.exists(sfile)){
                           xiFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
                           nuFrhs = ~ group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # interaction
                           niter=niter, eps.xi=eps, eps.nu=eps)
-    saveRDS(bootGPD, file=sfile) # save the bootstrapped object (takes some min, too!)
+    saveRDS(bootGPD, file=sfile) # save the bootstrapped object (takes ~ 5min!!!)
 }
 
 ## compute fitted values of xi, beta and CIs (pointwise bootstrapped)
-xibetaFit <- get.GPD.fit(bootGPD, alpha=a) # several s
+xibetaFit <- get.GPD.fit(bootGPD, alpha=a) # takes several s
 
 ## compute predicted values
 xibetaPred <- GPD.predict(bootGPD)
@@ -458,7 +458,7 @@ for(j in 1:ngrp){
                              alpha=alpha, u=u)
     points(yrs, VaR.true)
     ## group labels
-    text(min(xlim)+0.9*diff(xlim), min(ylim)+0.6*diff(ylim),
+    text(min(xlim)+0.9*diff(xlim), min(ylim)+0.9*diff(ylim),
          labels=grp[j], font=2)
 }
 ## x axis label
@@ -479,5 +479,3 @@ text(0.1, 0.5, srt=90,
 ## finalize
 par(opar) # reset plot parameters to their old values
 if(doPDF) dev.off()
-
-

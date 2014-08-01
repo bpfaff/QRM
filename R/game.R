@@ -787,7 +787,19 @@ risk.measure <- function(x, alpha, u, method=c("VaR", "ES")){
     method <- match.arg(method)
     switch(method,
            "VaR"={
-               u+(beta/xi)*(((1-alpha)/lambda)^(-xi)-1)
+               ## Concerning 1-exp(-lambda), note: the number of losses until t
+               ## is Poi(Lambda(t)) distributed, hence N_t ~ Poi(Lambda(t)).
+               ## The number of losses in [t, t+1] (1y here) is thus
+               ## Poi(Lambda([t,t+1])) distributed. With Lambda([t,t+1])
+               ## = \int_t^{t+1} lambda(s) ds and the fact that our lambda is
+               ## constant in [t,t+1] (only depending on covariates other than
+               ## time), we obtain Lambda([t,t+1]) = lambda(t) * (t+1 - t)
+               ## = lambda(t). So the number of losses in [t,t+1] is
+               ## Poi(lambda(t)) distributed.
+               ## The denominator has to be (see QRM) \bar{F}(u)
+               ## = 1 - P("no exceedance over u in [t,t+1]")
+               ## = 1 - lambda(t)^0/0! * exp(-lambda(t)) = 1 - exp(-lambda(t))
+               u + (beta/xi) * (((1-alpha) / (1-exp(-lambda)))^(-xi) - 1)
            },
            "ES"={
                ES <- (risk.measure(cbind(lambda, xi, beta),
