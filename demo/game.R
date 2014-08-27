@@ -162,7 +162,7 @@ grid <- expand.grid(group=grp, year=yrs) # *all* variable combinations
 lvls <- apply(grid, 1, paste, collapse=" ")
 nm <- sapply(split(x$loss, factor(paste(x$group, x$year), levels=lvls)), length)
 x.num <- data.frame(grid, num = nm, row.names = seq_len(length(lvls)))
-x.num <- x.num[order(x.num$group, x.num$year),] # sort (simplifies VaR computation)
+x.num <- x.num[order(x.num$group, x.num$year),] # sort; simplifies VaR computation
 ## => compare with n!
 
 ## fit lambda
@@ -239,13 +239,18 @@ par(opar) # reset plot parameters to their old values
 rate.exc <- sapply(split(x$loss, factor(paste(x$group, x$year), levels=lvls)),
                    function(z) sum(z > u)/length(z)) # rates of exceedances
 x.rate <- data.frame(grid, rate.exc = rate.exc, row.names = seq_len(length(lvls)))
-x.rate <- x.rate[order(x.rate$group, x.rate$year),] # sort (simplifies VaR computation)
+x.rate <- x.rate[order(x.rate$group, x.rate$year),] # sort; simplifies VaR computation
 
-## fit rho (more sophisticated: fit several models, compare...)
-modrho <- gam(rate.exc~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => fine
-              data=x.rate, link=logit)
-## modrho <- gam(rate.exc~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
-##               data=x.rate, link=logit)
+## fit various models for rho and choose the 'best'
+rho1 <- gam(rate.exc~1, data=x.rate, link=logit) # fit logistic regression (gam) model
+rhoGrp <- gam(rate.exc~group-1, data=x.rate, link=logit) # fit gam model
+1-pchisq(as.numeric(-2*(logLik(rho1)-logLik(rhoGrp))), df=1) # => group is significant
+
+rhoYGrp <- gam(rate.exc~group+year-1, data=x.rate, link=logit) # fit gam model
+1-pchisq(as.numeric(-2*(logLik(rhoGrp)-logLik(rhoYGrp))), df=1) # => year is not significant
+
+## model for rho
+modrho <- gam(rate.exc~group-1, data=x.rate, link=logit)
 
 ## compute fitted and predicted rates incl. pointwise asymptotic CIs
 rhoFit <- get.gam.fit(modrho)
@@ -399,20 +404,19 @@ par(opar) # reset plot parameters to their old values
 
 ### fit ########################################################################
 
-## determine how the object should look like
-## lamFit, xibetaFit => fitted VaR (= function in estimators of lambda, xi, beta)
-## depends on bl and year. There are 19 (group, year) combinations.
-## => if we had for losses for only some of them, use those with available losses
-avail <- x.num$num > 0 # boolean indicating (in x.num) which of the (group, year) combinations are available
-covar <- x.num[avail, c("group", "year")] # covariate combinations for which losses are available; sorted lexicographically since x.num is
-stopifnot(x.num[avail, c("group", "year")] == rhoFit$covar) # => same order (due to sorting of x.num), we can thus use avail to pick out fitted lambda
-## fit rho (lambda would be: lamFit. <- lamFit$fit[avail])
+## rhoFit, xibetaFit => fitted VaR (= function in estimators of rho, xi, beta)
+## depends on bl and year. There are 19 available (group, year) combinations.
+
+## note: rhoFit$covar only depends on 'group' => expand to xibetaFit$xi$covar
+covar <- xibetaFit$xi$covar # => 19 (group, year) combinations
+rhoFit$fit <- rhoFit$fit[match(covar$group, rhoFit$covar)]
+rhoFit$covar <- covar
+## pick out rho (all 1s here)
 rhoFit. <- rhoFit$fit # length 19
 ## pick out xi
-stopifnot(covar == xibetaFit$xi$covar) # => same order [nothing to pick out]
 xiFit.mat <- cbind(xibetaFit$xi$fit, xibetaFit$xi$boot) # => (19, B+1)
 ## pick out beta
-stopifnot(covar == xibetaFit$beta$covar) # => same order [nothing to pick out]
+stopifnot(xibetaFit$beta$covar == covar) # => same order
 betaFit.mat <- cbind(xibetaFit$beta$fit, xibetaFit$beta$boot) # => (19, B+1)
 
 ## compute fitted VaR for all those (B+1)-many vectors (rho, xi, beta)
@@ -428,18 +432,25 @@ VaR.fit <- data.frame(covar, # covariates
 
 ### predict ####################################################################
 
-## lamPred/rhoPred, xibetaPred => predicted VaR (= function in predicted lambda/rho,
-## xi, beta) depends on bl and year. Predict on all 20 combinations; note: GPD.predict()
-## does not (cannot) guarantee the same order of covariates as for lambda/rho
-## => check! To guarantee the same order, one could either sort by hand (order())
-##    or call GPD.predict() with a specific newdata (namely covar)
-covar <- rhoPred$covar
-rhoPred. <- rhoPred$predict # => 20
+## rhoPred, xibetaPred => predicted VaR. Predict on all 20 combinations;
+## note: GPD.predict() does not (cannot) guarantee the same order of covariates
+##       as for rho => check!
+##       To guarantee the same order, one could either sort by hand (order())
+##       or call GPD.predict() with a specific newdata (namely covar)
+
+## note: rhoPred$covar only depends on 'group' => expand to xibetaPred$xi$covar
+covar <- xibetaPred$xi$covar # => all 20 (group, year) combinations
+idx <- match(covar$group, rhoPred$covar$group)
+rhoPred$predict <- rhoPred$predict[idx]
+rhoPred$CI.low <- rhoPred$CI.low[idx]
+rhoPred$CI.up <- rhoPred$CI.up[idx]
+rhoPred$covar <- covar
+## pick out rho (all 1s here)
+rhoPred. <- rhoPred$predict # length 20
 ## pick out xi
-stopifnot(covar == xibetaPred$xi$covar) # => same order [nothing to pick out]
 xiPred. <- xibetaPred$xi$predict # predicted beta's
 ## pick out beta
-stopifnot(covar == xibetaPred$beta$covar) # => same order [nothing to pick out]
+stopifnot(xibetaPred$beta$covar == covar) # => same order
 betaPred. <- xibetaPred$beta$predict # predicted beta's
 
 ## compute predicted VaR
