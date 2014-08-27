@@ -310,8 +310,6 @@ for(j in seq_len(ngrp)){
         lines(c(yr[k]-whiskex, yr[k]+whiskex), rep(xibetaFit$xi$CI.up[jgrp][k], 2)) # upper whisker
     }
     ## fitted xi
-    jgrp <- xibetaFit$xi$covar$group==grp[j]
-    yr <- xibetaFit$xi$covar$year[jgrp]
     points(yr, xibetaFit$xi$fit[jgrp], pch=20)
     ## actual xi
     if(grp[j]==rm.g) points(yrs[yrs!=rm.y], xi[yrs!=rm.y, j]) else points(yrs, xi[,j])
@@ -369,8 +367,6 @@ for(j in 1:ngrp){
         lines(c(yr[k]-whiskex, yr[k]+whiskex), rep(xibetaFit$beta$CI.up[jgrp][k], 2)) # upper whisker
     }
     ## fitted beta
-    jgrp <- xibetaFit$beta$covar$group==grp[j]
-    yr <- xibetaFit$beta$covar$year[jgrp]
     points(yr, xibetaFit$beta$fit[jgrp], pch=20)
     ## actual beta
     if(grp[j]==rm.g) points(yrs[yrs!=rm.y], beta[yrs!=rm.y, j]) else points(yrs, beta[,j])
@@ -473,9 +469,10 @@ layout(layout.mat, widths=c(0.2, 1, 1), heights=c(1, 0.2)) # layout
 opar <- par(mar=rep.int(0,4), oma=rep.int(3,4)) # plot parameters
 ## plot
 for(j in 1:ngrp){
-    jgrp <- VaR.pred$group==grp[j] # group boolean in VaR.pred
     ## predicted VaR
-    plot(VaR.pred$year[jgrp], VaR.pred$predict[jgrp], type="l", log="y",
+    jgrp <- VaR.pred$group==grp[j] # group boolean in VaR.pred
+    yr <- VaR.pred$year[jgrp]
+    plot(yr, VaR.pred$predict[jgrp], type="l", log="y",
          xlim=xlim, ylim=ylim, yaxt=if(j%%2==1) "s" else "n")
     ## if(j%%2==1) eaxis(2, at=10^1:5) # => requires sfsmisc
     ## CIs
