@@ -1,16 +1,16 @@
 \name{game-aux}
-\alias{get.lambda.fit}
-\alias{lambda.predict}
+\alias{get.gam.fit}
+\alias{gam.predict}
 \alias{get.GPD.fit}
 \alias{GPD.predict}
 \alias{risk.measure}
 \title{Auxiliary Functions for Extracting/Computing Results Related to gamGPDfit()/gamGPDboot()}
 \description{
-  \code{get.lambda.fit()} extracts a convenient list containing unique
+  \code{get.gam.fit()} extracts a convenient list containing unique
   covariate combinations and corresponding fitted values from an
   object returned by \code{\link{gam}()}.
 
-  \code{lambda.predict()} computes a convenient list containing unique
+  \code{gam.predict()} computes a convenient list containing unique
   covariate combinations and corresponding predicted values and
   pointwise asymptotic confidence intervals (obtained from the estimated
   standard errors obtained by \code{predict(..., se.fit=TRUE)}).
@@ -24,27 +24,27 @@
   \code{GPD.predict()} computes a convenient list containing (for each
   of the GPD parameters) unique
   covariate combinations and  corresponding predicted values.
-  % note the asymmetry: lambda: lambda.predict() produces CIs;
-  %                     GPD:    get.GPD.fit() does
 
   \code{risk.measure()} computes the selected risk measure at a matrix
-  of values for \eqn{\lambda}{lambda}, \eqn{\xi}{xi}, \eqn{\beta}{beta}.
+  of values for \eqn{\rho}{rho}, \eqn{\xi}{xi}, \eqn{\beta}{beta}.
 }
 \usage{
-get.lambda.fit(x)
-lambda.predict(x, newdata=NULL, alpha=0.05)
+get.gam.fit(x)
+gam.predict(x, newdata=NULL, alpha=0.05, value=c("lambda", "rho"))
 get.GPD.fit(x, alpha=0.05)
 GPD.predict(x, xi.newdata=NULL, beta.newdata=NULL)
 
 risk.measure(x, alpha, u, method = c("VaR", "ES"))
 }
 \arguments{
-  \item{x}{For \code{get.lambda.fit()}, \code{lambda.predict()}
+  \item{x}{For \code{get.gam.fit()} and \code{gam.predict()}
     an object as returned by \code{\link{gam}()}; for
-    \code{get.GPD.fit()}, \code{GPD.predict()} an object as returned by
+    \code{get.GPD.fit()} and \code{GPD.predict()} an object as returned by
     \code{\link{gamGPDboot}()}; for \code{risk.measure()} a matrix with
-    three columns containing \eqn{\lambda}{lambda}, \eqn{\xi}{xi},
-    \eqn{\beta}{beta} (in this order).}
+    three columns containing an estimate \eqn{\rho}{rho} of the tail of
+    the loss distribution at the threshold \code{u} for a covariate
+    combination, the corresponding \eqn{\xi}{xi} and the
+    corresponding \eqn{\beta}{beta} (in this order).}
   \item{newdata}{object as required by
     \code{\link{predict}()}. Typically a named \code{\link{data.frame}}
     of type \code{expand.grid(covar1=, covar2=)} with at least the covariates
@@ -57,25 +57,28 @@ risk.measure(x, alpha, u, method = c("VaR", "ES"))
     fitted model.}
   \item{xi.newdata, beta.newdata}{as \code{newdata}, just for the GPD
     parameters \eqn{\xi}{xi} and \eqn{\beta}{beta}.}
-  \item{alpha}{for \code{lambda.predict()},
+  \item{alpha}{for \code{gam.predict()},
     \code{get.GPD.fit()} the significance level
     (typcially 0.05); for \code{risk.measure()} the confidence level
     (typically close to 1).}
   \item{u}{threshold.}
+  \item{value}{either \code{"lambda"} or \code{"rho"} depending on
+    whether \eqn{\lambda}{lambda} or \eqn{\rho}{rho} is predicted.}
   \item{method}{\code{\link{character}} string indicating the kind of
-    risk measure (Value-at-Risk (\code{VaR}) or expected shortfall (\code{ES})).}
+    risk measure (Value-at-Risk (\code{VaR}) or expected shortfall
+    (\code{ES})).}
 }
 \value{
-  \code{get.lambda.fit()} returns a list with components
+  \code{get.gam.fit()} returns a list with components
   \describe{
     \item{\code{covar}:}{(unique/minimalized) covariate combinations;}
-    \item{\code{fit}:}{corresponding fitted values of lambda.}
+    \item{\code{fit}:}{corresponding fitted values of lambda or rho.}
   }
 
-  \code{lambda.predict()} returns a list with components
+  \code{gam.predict()} returns a list with components
   \describe{
     \item{\code{covar}:}{covariate combinations as provided by \code{newdata};}
-    \item{\code{predict}:}{predicted lambda;}
+    \item{\code{predict}:}{predicted lambda or rho;}
     \item{\code{CI.low}:}{lower confidence interval (based on predicted values);}
     \item{\code{CI.up}:}{upper confidence interval (based on predicted values).}
   }

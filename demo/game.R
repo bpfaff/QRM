@@ -76,9 +76,9 @@ if(FALSE){
 
     ## test: no covariates
     gamDummy <- gam(loss ~ 1, data=z) # fit without covariates
-    get.lambda.fit(gamDummy) # evaluate fitted object
+    get.gam.fit(gamDummy) # evaluate fitted object
     (prd <- predict(gamDummy, newdata=data.frame(foo=rep(LETTERS[1:2], each=3)), se.fit=TRUE)) # => predict() should just repeat the values in this case
-    lambda.predict(gamDummy) # predict from fitted object
+    gam.predict(gamDummy, value="lambda") # predict from fitted object
 
     ## fitting results
     (res1 <- cbind(z, fit=gamFit1$fitted.values)) # same covariate combis (= (year, group)) => fits are equal
@@ -113,7 +113,8 @@ if(FALSE){
 ### 2) Functions ###############################################################
 
 ## example functions for generating losses
-loss <- function(n, xi, beta, u) u + rGPD(n, xi=xi, beta=beta) # sampling losses
+loss <- function(n, xi, beta, u)
+    u + rGPD(n, xi=xi, beta=beta) # sampling losses
 
 
 ### 3) Generate data ###########################################################
@@ -136,6 +137,11 @@ grpList <- mapply(rep, rgr, n, SIMPLIFY=FALSE)
 x <- data.frame(year  = unlist(yearList),
                 group = unlist(grpList),
                 loss  = unlist(lossList))
+
+## remove values for one covariate combination (to make it more interesting)
+rm.y <- 2006
+rm.g <- "A"
+x <- x[!(x$year==rm.y & x$group==rm.g),]
 
 
 ### 4) Model fitting ###########################################################
@@ -160,14 +166,15 @@ x.num <- x.num[order(x.num$group, x.num$year),] # sort (simplifies VaR computati
 ## => compare with n!
 
 ## fit lambda
-modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => bad fit
-              data=x.num, family=poisson)
+x.num. <- x.num[x.num$num>0,]
+modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => fine
+              data=x.num., family=poisson)
 modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
-              data=x.num, family=poisson)
+              data=x.num., family=poisson)
 
 ## compute fitted and predicted values incl. pointwise asymptotic CIs
-lamFit <- get.lambda.fit(modlam)
-lamPred <- lambda.predict(modlam, alpha=a)
+lamFit <- get.gam.fit(modlam)
+lamPred <- gam.predict(modlam, alpha=a, value="lambda")
 
 
 ### 4.1.2) Plot fitted and predicted lambda and CIs ############################
@@ -186,8 +193,8 @@ layout(layout.mat, widths=c(0.2, 1, 1), heights=c(1, 0.2)) # layout
 opar <- par(mar=rep.int(0,4), oma=rep.int(3,4)) # plot parameters
 ## plot
 for(j in 1:ngrp){
-    jgrp <- lamPred$covar$group==grp[j] # group boolean
     ## predicted lambda
+    jgrp <- lamPred$covar$group==grp[j] # group boolean
     yr <- lamPred$covar$year[jgrp]
     plot(yr, lamPred$predict[jgrp], type="l",
          xlim=xlim, ylim=ylim, yaxt=if(j%%2==1) "s" else "n") # predicted lambda
@@ -195,9 +202,12 @@ for(j in 1:ngrp){
     lines(yr, lamPred$CI.low[jgrp], lty=2) # lower CI
     lines(yr, lamPred$CI.up[jgrp], lty=2) # upper CI
     ## fitted lambda
+    jgrp <- lamFit$covar$group==grp[j] # possibly different from before (if there are covariate combinations without losses...)
     yr <- lamFit$covar$year[jgrp] # possibly different from before
     points(yr, lamFit$fit[jgrp], pch=20) # fitted lambda
     ## actual generated number (note: lambda(t) ~= expected # of events in year t)
+    jgrp <- x.num$group==grp[j] # possibly different from before
+    yr <- x.num[jgrp, "year"] # possibly different from before
     points(yr, x.num[jgrp,"num"]) # use all years with non-missing data here
     ## group labels
     text(min(xlim)+0.05*diff(xlim), min(ylim)+0.95*diff(ylim),
@@ -220,6 +230,26 @@ text(0.1, 0.5, srt=90,
      list(a.=1-a)))
 ## finalize
 par(opar) # reset plot parameters to their old values
+
+
+### 4.1.3) rho fitting and predicting ##########################################
+
+## determine a data set which contains the rate of exceedances for *each* covariate
+## combination
+rate.exc <- sapply(split(x$loss, factor(paste(x$group, x$year), levels=lvls)),
+                   function(z) sum(z > u)/length(z)) # rates of exceedances
+x.rate <- data.frame(grid, rate.exc = rate.exc, row.names = seq_len(length(lvls)))
+x.rate <- x.rate[order(x.rate$group, x.rate$year),] # sort (simplifies VaR computation)
+
+## fit rho
+modrho <- gam(rate.exc~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => fine
+              data=x.rate, link=logit)
+## modrho <- gam(rate.exc~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
+##               data=x.rate, link=logit)
+
+## compute fitted and predicted rates incl. pointwise asymptotic CIs
+rhoFit <- get.gam.fit(modrho)
+rhoPred <- gam.predict(modrho, alpha=a, value="rho")
 
 
 ### 4.2) GPD parameters xi and beta ############################################
@@ -265,9 +295,10 @@ layout(layout.mat, widths=c(0.2, 1, 1), heights=c(1, 0.2)) # layout
 opar <- par(mar=rep.int(0,4), oma=rep.int(3,4)) # plot parameters
 ## plot
 for(j in seq_len(ngrp)){
-    jgrp <- xibetaPred$xi$covar$group==grp[j] # group boolean in xibetaPred
     ## predicted xi
-    plot(xibetaPred$xi$covar$year[jgrp], xibetaPred$xi$predict[jgrp], type="l",
+    jgrp <- xibetaPred$xi$covar$group==grp[j] # group boolean in xibetaPred
+    yr <- xibetaPred$xi$covar$year[jgrp]
+    plot(yr, xibetaPred$xi$predict[jgrp], type="l",
          xlim=xlim, ylim=ylim, yaxt=if(j%%2==1) "s" else "n")
     ## CIs
     jgrp <- xibetaFit$xi$covar$group==grp[j] # group boolean in xibetaFit
@@ -279,9 +310,11 @@ for(j in seq_len(ngrp)){
         lines(c(yr[k]-whiskex, yr[k]+whiskex), rep(xibetaFit$xi$CI.up[jgrp][k], 2)) # upper whisker
     }
     ## fitted xi
+    jgrp <- xibetaFit$xi$covar$group==grp[j]
+    yr <- xibetaFit$xi$covar$year[jgrp]
     points(yr, xibetaFit$xi$fit[jgrp], pch=20)
     ## actual xi
-    points(yrs, xi[,j]) # plotting for all years
+    if(grp[j]==rm.g) points(yrs[yrs!=rm.y], xi[yrs!=rm.y, j]) else points(yrs, xi[,j])
     ## group labels
     text(min(xlim)+0.95*diff(xlim), min(ylim)+0.95*diff(ylim),
          labels=grp[j], font=2)
@@ -321,9 +354,10 @@ layout(layout.mat, widths=c(0.2, 1, 1), heights=c(1, 0.2)) # layout
 opar <- par(mar=rep.int(0,4), oma=rep.int(3,4)) # plot parameters
 ## plot
 for(j in 1:ngrp){
-    jgrp <- xibetaPred$beta$covar$group==grp[j] # group boolean in xibetaPred
     ## predicted beta
-    plot(xibetaPred$beta$covar$year[jgrp], xibetaPred$beta$predict[jgrp], type="l",
+    jgrp <- xibetaPred$beta$covar$group==grp[j] # group boolean in xibetaPred
+    yr <- xibetaPred$beta$covar$year[jgrp]
+    plot(yr, xibetaPred$beta$predict[jgrp], type="l",
          xlim=xlim, ylim=ylim, yaxt=if(j%%2==1) "s" else "n")
     ## CIs
     jgrp <- xibetaFit$beta$covar$group==grp[j] # group boolean in xibetaFit
@@ -335,9 +369,11 @@ for(j in 1:ngrp){
         lines(c(yr[k]-whiskex, yr[k]+whiskex), rep(xibetaFit$beta$CI.up[jgrp][k], 2)) # upper whisker
     }
     ## fitted beta
+    jgrp <- xibetaFit$beta$covar$group==grp[j]
+    yr <- xibetaFit$beta$covar$year[jgrp]
     points(yr, xibetaFit$beta$fit[jgrp], pch=20)
     ## actual beta
-    points(yrs, beta[,j]) # plotting for all years
+    if(grp[j]==rm.g) points(yrs[yrs!=rm.y], beta[yrs!=rm.y, j]) else points(yrs, beta[,j])
     ## group labels
     text(min(xlim)+0.05*diff(xlim), min(ylim)+0.95*diff(ylim),
          labels=grp[j], font=2)
@@ -369,25 +405,25 @@ par(opar) # reset plot parameters to their old values
 
 ## determine how the object should look like
 ## lamFit, xibetaFit => fitted VaR (= function in estimators of lambda, xi, beta)
-## depends on bl and year. There are 20 (group, year) combinations. However,
-## for some combinations we don't have losses => only 18 combinations are available
-## => use them for computing the fitted VaR.
+## depends on bl and year. There are 19 (group, year) combinations.
+## => if we had for losses for only some of them, use those with available losses
 avail <- x.num$num > 0 # boolean indicating (in x.num) which of the (group, year) combinations are available
 covar <- x.num[avail, c("group", "year")] # covariate combinations for which losses are available; sorted lexicographically since x.num is
-stopifnot(x.num[, c("group", "year")] == lamFit$covar) # => same order (due to sorting of x.num), we can thus use avail to pick out fitted lambda
-## pick out lambda
-lamFit. <- lamFit$fit[avail] # => 18
+stopifnot(x.num[avail, c("group", "year")] == rhoFit$covar) # => same order (due to sorting of x.num), we can thus use avail to pick out fitted lambda
+## fit rho (lambda would be: lamFit. <- lamFit$fit[avail])
+rhoFit. <- rhoFit$fit # length 19
 ## pick out xi
 stopifnot(covar == xibetaFit$xi$covar) # => same order [nothing to pick out]
-xiFit.mat <- cbind(xibetaFit$xi$fit, xibetaFit$xi$boot) # => (18, B+1)
+xiFit.mat <- cbind(xibetaFit$xi$fit, xibetaFit$xi$boot) # => (19, B+1)
 ## pick out beta
 stopifnot(covar == xibetaFit$beta$covar) # => same order [nothing to pick out]
-betaFit.mat <- cbind(xibetaFit$beta$fit, xibetaFit$beta$boot) # => (18, B+1)
+betaFit.mat <- cbind(xibetaFit$beta$fit, xibetaFit$beta$boot) # => (19, B+1)
 
-## compute fitted VaR for all those (B+1)-many vectors (lambda, xi, beta)
+## compute fitted VaR for all those (B+1)-many vectors (rho, xi, beta)
 VaR <- cbind(covar, fit=sapply(1:(B+1), function(j)
-                    risk.measure(cbind(lamFit., xiFit.mat[,j], betaFit.mat[,j]),
-                                 alpha=alpha, u=u, method="VaR")))
+    risk.measure(cbind(rhoFit., xiFit.mat[,j], betaFit.mat[,j]),
+                 alpha=alpha, u=u, method="VaR")
+))
 VaR.boot <- subset(VaR, select=(ncol(VaR)-B):ncol(VaR)) # bootstrapped results
 VaR.fit <- data.frame(covar, # covariates
                       fit    = VaR$fit.1, # fit
@@ -396,13 +432,13 @@ VaR.fit <- data.frame(covar, # covariates
 
 ### predict ####################################################################
 
-## lamPred, xibetaPred => predicted VaR (= function in predicted lambda, xi, beta)
-## depends on bl and year. Predict on all 20 combinations; note: GPD.predict()
-## does not (cannot) guarantee the same order of covariates as for lambda, for example
+## lamPred/rhoPred, xibetaPred => predicted VaR (= function in predicted lambda/rho,
+## xi, beta) depends on bl and year. Predict on all 20 combinations; note: GPD.predict()
+## does not (cannot) guarantee the same order of covariates as for lambda/rho
 ## => check! To guarantee the same order, one could either sort by hand (order())
 ##    or call GPD.predict() with a specific newdata (namely covar)
-covar <- lamPred$covar
-lamPred. <- lamPred$predict # => 20
+covar <- rhoPred$covar
+rhoPred. <- rhoPred$predict # => 20
 ## pick out xi
 stopifnot(covar == xibetaPred$xi$covar) # => same order [nothing to pick out]
 xiPred. <- xibetaPred$xi$predict # predicted beta's
@@ -412,7 +448,7 @@ betaPred. <- xibetaPred$beta$predict # predicted beta's
 
 ## compute predicted VaR
 VaR.pred <- data.frame(covar, # covariates
-                       predict = risk.measure(cbind(lamPred., xiPred., betaPred.),
+                       predict = risk.measure(cbind(rhoPred., xiPred., betaPred.),
                                               alpha=alpha, u=u, method="VaR")) # predict
 
 ## basic sanity check
@@ -454,8 +490,8 @@ for(j in 1:ngrp){
     ## fitted VaR
     points(yr, VaR.fit$fit[jgrp], pch=20)
     ## actual VaR
-    VaR.true <- risk.measure(cbind(lambda=n[,j], xi=xi[,j], beta=beta[,j]),
-                             alpha=alpha, u=u)
+    VaR.true <- risk.measure(cbind(rho=x.rate[x.rate$group==grp[j], "rate.exc"], # non-parametric estimate
+                                   xi=xi[,j], beta=beta[,j]), alpha=alpha, u=u)
     points(yrs, VaR.true)
     ## group labels
     text(min(xlim)+0.9*diff(xlim), min(ylim)+0.9*diff(ylim),

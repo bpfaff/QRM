@@ -492,7 +492,9 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
     ## post-blackened bootstrap; see Chavez-Demoulin and Davison (2005)
     rnum <- 1 # iteration number
     bfit <- lapply(1:B, function(b){
-        ## resample residuals within each group of (same) covariates,
+        ## resample residuals within each group of (same) covariates
+        ## => in particular, the *number* of excesses remains the same
+        ##    for each covariate combination
         rr <- ave(fit$res, fit$covar,
                   FUN=function(r) if(length(r)==1) r else
                         sample(r, size=length(r), replace=TRUE))
@@ -532,13 +534,13 @@ gamGPDboot <- function(x, B, threshold, nextremes=NULL, datvar, xiFrhs, nuFrhs,
 
 ### Functions to extract fitted results and for predicting #####################
 
-##' @title Compute Fitted lambda
+##' @title Extract Fits in a minimalized form
 ##' @param x object as returned by gam()
 ##' @return a list with components
 ##'         covar: containing the ('minimalized') covariate combinations
-##'         fit:   corresponding fitted values of lambda
+##'         fit:   corresponding fitted values
 ##' @author Marius Hofert
-get.lambda.fit <- function(x)
+get.gam.fit <- function(x)
 {
     ## check x
     stopifnot(inherits(x, "gam"))
@@ -550,17 +552,17 @@ get.lambda.fit <- function(x)
     ## determine fitted values for each covariate combination in (the 'minimalized') covars
     ## => Only combinations of the covariates used for fitting are given and thus
     ##    there are no fitted values returned for each excess.
-    y <- cbind(covars, lambda=x$fitted.values)
-    frml <- as.formula(paste("lambda ~", paste(rev(covar.nms), collapse=" + ")))
-    covar.lam.hat <- aggregate(frml, data=y, function(z) z[1]) # pick out only first value (they are equal anyways)
-    covar.lam.hat <- covar.lam.hat[,rev(names(covar.lam.hat)), drop=FALSE] # revert again to keep column order [now lambda is in the *first* column]
+    y <- cbind(covars, value=x$fitted.values) # value = lambda or rho
+    frml <- as.formula(paste("value ~", paste(rev(covar.nms), collapse=" + ")))
+    covar.hat <- aggregate(frml, data=y, function(z) z[1]) # pick out only first value (they are equal anyways)
+    covar.hat <- covar.hat[,rev(names(covar.hat)), drop=FALSE] # revert again to keep column order [now value is in the *first* column]
 
     ## return
-    list(covar = if(ncol(covar.lam.hat) > 1) covar.lam.hat[,-1] else NULL, # covariate combinations used for fitting
-         fit   = covar.lam.hat[,1]) # fitted lambda
+    list(covar = if(ncol(covar.hat) > 1) covar.hat[,-1] else NULL, # covariate combinations used for fitting
+         fit   = covar.hat[,1]) # fitted value
 }
 
-##' @title Compute Predicted lambda and Pointwise Asymptotic Two-Sided 1-alpha Confidence Intervals
+##' @title Compute Predicted lambda or rho and Pointwise Asymptotic Two-Sided 1-alpha Confidence Intervals
 ##' @param x object as returned by gam()
 ##' @param newdata 'newdata' object as required by predict(); named data.frame
 ##'        of type expand.grid(covar1=, covar2=) with at least the covariates
@@ -573,14 +575,15 @@ get.lambda.fit <- function(x)
 ##' @param alpha significance level
 ##' @return a list with components
 ##'         covar:   containing the covariate combinations as provided by newdata
-##'         predict: the predicted lambda
+##'         predict: the predicted lambda or rho
 ##'         CI.low:  lower CI [based on *predicted* values]
 ##'         CI.up:   upper CI [based on *predicted* values]
 ##' @author Marius Hofert
-lambda.predict <- function(x, newdata=NULL, alpha=0.05)
+gam.predict <- function(x, newdata=NULL, alpha=0.05, value=c("lambda", "rho"))
 {
     ## check x
     stopifnot(inherits(x, "gam"))
+    value <- match.arg(value)
 
     ## default for newdata
     if(is.null(newdata)) { # choose useful default (exactly the covariates used for fitting but *all* combis of such)
@@ -588,28 +591,29 @@ lambda.predict <- function(x, newdata=NULL, alpha=0.05)
             covar.nms <- names(x$var.summary) # names of covariates used for fitting (right-hand side of the formula in gam())
             ## determine the minimal grid which contains all combinations of covars used for fitting the model
             covars <- x$model[,covar.nms, drop=FALSE] # build 'minimal' grid of covariates used for fitting
-            lam.covars <- lapply(1:ncol(covars), function(j) sort(unique(covars[,j]))) # determine levels
-            names(lam.covars) <- colnames(covars) # put in names
-            newdata <- expand.grid(rev(lam.covars))[,rev(seq_len(length(lam.covars))), drop=FALSE] # expand grid with reverted covariates (and reverting back) to guarantee the same sorting order of rows as covars
+            covars. <- lapply(1:ncol(covars), function(j) sort(unique(covars[,j]))) # determine levels
+            names(covars.) <- colnames(covars) # put in names
+            newdata <- expand.grid(rev(covars.))[,rev(seq_len(length(covars.))), drop=FALSE] # expand grid with reverted covariates (and reverting back) to guarantee the same sorting order of rows as covars
 	## check newdata
             if(!all(covar.nms %in% colnames(newdata)))
-                stop("'newdata' requires at least the covariates used for fitting lambda via gam()")
+                stop("'newdata' requires at least the covariates used for fitting ", value, " via gam()")
         } else {
-            newdata <- data.frame(lambda.dummy.covar=1)
+            newdata <- data.frame(dummy.covar=1)
         }
     }
 
     ## predict (note: can contain half-years etc.)
     pred <- predict(x, newdata=newdata, se.fit=TRUE) # predict object
-    lam.pred <- as.numeric(pred$fit) # predicted values for lambda
-    lam.se <- as.numeric(pred$se.fit) # standard error
+    pred. <- as.numeric(pred$fit) # predicted values (lambda/rho)
+    se. <- as.numeric(pred$se.fit) # standard error
     qa2 <- qnorm(1-alpha/2) # 1-alpha/2 quantile of N(0,1)
 
-    ## return
+    ## return (exp() is due to family=poisson used for lambda;
+    ##         rho comes from a logistic regression => not needed there)
     list(covar   = if(length(x$var.summary) > 0) newdata else NULL, # covariate combinations as specified by newdata
-         predict = exp(lam.pred), # predicted lambda
-         CI.low  = exp(lam.pred-qa2*lam.se), # lower CI [based on *predicted* values]
-         CI.up   = exp(lam.pred+qa2*lam.se)) # upper CI [based on *predicted* values]
+         predict = if(value=="lambda") exp(pred.) else pred., # predicted lambda/rho
+         CI.low  = if(value=="lambda") exp(pred.-qa2*se.) else pred.-qa2*se., # lower CI [based on *predicted* values]
+         CI.up   = if(value=="lambda") exp(pred.+qa2*se.) else pred.+qa2*se.) # upper CI [based on *predicted* values]
 }
 
 ##' @title Compute Fitted GPD Parameters xi and beta and Bootstrapped Pointwise Two-Sided
@@ -773,37 +777,58 @@ GPD.predict <- function(x, xi.newdata=NULL, beta.newdata=NULL)
 ### Computing risk measures ####################################################
 
 ##' @title Compute Value-at-Risk or Expected Shortfall for a GPD
-##' @param x matrix with three columns containing lambda, xi, and beta
+##' @param x matrix with three columns containing rho (estimate for \bar{F}(u)
+##'        depending on covariates; obtained via logistic regression),
+##'        corresponding xi and beta
 ##' @param alpha confidence level
 ##' @param u threshold
 ##' @param method either "VaR" for Value-at-Risk or "ES" for expected shortfall
 ##' @return Value-at-Risk or expected shortfall
-risk.measure <- function(x, alpha, u, method=c("VaR", "ES")){
+risk.measure <- function(x, alpha, u, method=c("VaR", "ES"))
+{
     if(!is.matrix(x)) x <- rbind(x, deparse.level=0L)
     stopifnot(ncol(x)==3)
-    lambda <- x[,1]
-    xi <- x[,2]
-    beta <- x[,3]
+    rho <- x[,1] # rho (estimate for \bar{F}(u) depending on covariates)
+    xi <- x[,2] # corresponding xi
+    beta <- x[,3] # corresponding beta
     method <- match.arg(method)
     switch(method,
            "VaR"={
-               ## Concerning 1-exp(-lambda), note: the number of losses until t
-               ## is Poi(Lambda(t)) distributed, hence N_t ~ Poi(Lambda(t)).
-               ## The number of losses in [t, t+1] (1y here) is thus
-               ## Poi(Lambda([t,t+1])) distributed. With Lambda([t,t+1])
-               ## = \int_t^{t+1} lambda(s) ds and the fact that our lambda is
-               ## constant in [t,t+1] (only depending on covariates other than
-               ## time), we obtain Lambda([t,t+1]) = lambda(t) * (t+1 - t)
-               ## = lambda(t). So the number of losses in [t,t+1] is
-               ## Poi(lambda(t)) distributed.
-               ## The denominator has to be (see QRM) \bar{F}(u)
-               ## = 1 - P("no exceedance over u in [t,t+1]")
-               ## = 1 - lambda(t)^0/0! * exp(-lambda(t)) = 1 - exp(-lambda(t))
-               u + (beta/xi) * (((1-alpha) / (1-exp(-lambda)))^(-xi) - 1)
+               ## The theory:
+               ## The number of exceedances until t is Poi(Lambda(t)) distributed,
+               ## hence N_t ~ Poi(Lambda(t)); in our case N_{x, t} ~
+               ## Poi(Lambda(x, t)). The number of exceedances in [t, t+1]
+               ## (1y here) is thus Poi(Lambda(x, [t,t+1])) distributed, with
+               ## Lambda(x, [t,t+1]) = \int_t^{t+1} lambda(x, s) ds. Since our
+               ## lambda(x, .) is constant in [t,t+1] (only depending on
+               ## covariates x other than time), we obtain Lambda(x, [t,t+1]) =
+               ## lambda(x, t) * (t+1 - t) = lambda(x, t). So the number of
+               ## exceedances in [t,t+1] is Poi(lambda(x, t)) distributed and
+               ## thus the expected number of exceedances in [t,t+1] is
+               ## lambda(x, t); we do this additional approximation of
+               ## considering the *expected* number to bring lambda into play
+               ## and thus obtain a parametric estimators (depending on covariates).
+               ## The denominator in the formula for VaR has to be
+               ## \bar{F}(u) ~= N_u/n (s. QRM book, p. 283) ~= E[N_u]/n (our
+               ## additional approximation) ~= lambda(x, t)/n_{x, t}, where
+               ## n_{x, t} is the number of overall losses for covariate x in
+               ## [t, t+1].
+               ##
+               ## The problems:
+               ## 1) lambda(x, t)/n_{x, t} does not have to be in [0,1]
+               ##    (but it is for large enough thresholds u; if this is not
+               ##     the case (lambda [= expected number of exceedances] > n_{x, t}
+               ##     [= total number of events]), this clearly indicates that u
+               ##     needs to be larger).
+               ## 2) If t is in the future, how would we predict n_{x, t}?
+               ##
+               ## The/A solution:
+               ## We directly approximate \bar{F}(u) by a *logistic* regression
+               ## => predict() available
+               u + (beta/xi) * (( (1-alpha) / rho )^(-xi) - 1)
            },
            "ES"={
-               ES <- (risk.measure(cbind(lambda, xi, beta),
-                                   alpha=alpha, u=u, method="VaR")+beta-xi*u)/(1-xi)
+               ES <- (risk.measure(x, alpha=alpha, u=u, method="VaR")+beta-xi*u)/(1-xi)
                ## adjust to be Inf if xi >= 1 (i.e., ES < 0)
                ## that's a convention, see p. 79 Coles (2001)
                if(any(xi >= 1)) ES[xi >= 1] <- Inf
