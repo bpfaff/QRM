@@ -167,8 +167,8 @@ x.num <- x.num[order(x.num$group, x.num$year),] # sort (simplifies VaR computati
 
 ## fit lambda
 x.num. <- x.num[x.num$num>0,]
-modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => fine
-              data=x.num., family=poisson)
+## modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => bad fit
+##               data=x.num., family=poisson)
 modlam <- gam(num~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
               data=x.num., family=poisson)
 
@@ -241,7 +241,7 @@ rate.exc <- sapply(split(x$loss, factor(paste(x$group, x$year), levels=lvls)),
 x.rate <- data.frame(grid, rate.exc = rate.exc, row.names = seq_len(length(lvls)))
 x.rate <- x.rate[order(x.rate$group, x.rate$year),] # sort (simplifies VaR computation)
 
-## fit rho
+## fit rho (more sophisticated: fit several models, compare...)
 modrho <- gam(rate.exc~group+s(year, fx=TRUE, k=edof+1, bs="cr")-1, # => fine
               data=x.rate, link=logit)
 ## modrho <- gam(rate.exc~group+s(year, fx=TRUE, k=edof+1, bs="cr", by=group)-1, # => fine (interaction)
