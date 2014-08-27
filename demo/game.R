@@ -426,7 +426,7 @@ VaR <- cbind(covar, fit=sapply(1:(B+1), function(j)
 ))
 VaR.boot <- subset(VaR, select=(ncol(VaR)-B):ncol(VaR)) # bootstrapped results
 VaR.fit <- data.frame(covar, # covariates
-                      fit    = VaR$[,2], # fit (first column contains covariates)
+                      fit    = VaR[,"fit.1"], # fit (3rd col; first two contain covariates)
                       CI.low = apply(VaR.boot, 1, quantile, probs=a/2), # lower CI
                       CI.up  = apply(VaR.boot, 1, quantile, probs=1-a/2)) # upper CI
 
