@@ -30,8 +30,8 @@ rmt <- function(n, df = 4, mu = 0, Sigma){
 dmt <- function(x, df, mu, Sigma, log = FALSE){
   d <- dim(x)[2]
   Q <- mahalanobis(x, mu, Sigma)
-  log.const.top <- log(gamma((df + d) / 2))
-  log.const.bottom <- log(gamma(df / 2)) + (d * log(pi * df)) / 2 + 0.5 * log(det(Sigma))
+  log.const.top <- lgamma((df + d)/2)
+  log.const.bottom <- lgamma((df + d)/2) + (d * log(pi * df)) / 2 + 0.5 * log(det(Sigma))
   log.top <- (- (df + d) * log(1 + Q / df)) / 2
   out <- log.const.top + log.top - log.const.bottom
   if(!(log)) out <- exp(out)
