@@ -26,8 +26,20 @@ import(numDeriv)
 import(timeSeries)
 
 ## importFrom
+importFrom("graphics", "abline", "axis", "box", "contour", "legend",
+              "mtext", "par", "persp", "title")
+importFrom("methods", "is")
+importFrom("stats", "as.formula", "ave", "cor", "dexp", "dgamma",
+           "dnorm", "dt", "fitted", "integrate", "ks.test",
+           "mahalanobis", "nlminb", "optim", "pchisq", "pexp",
+           "pgamma", "plot.stepfun", "pnorm", "ppoints", "predict",
+           "pt", "qbeta", "qchisq", "qexp", "qnorm", "qt", "rbinom",
+           "rchisq", "rgamma", "rnorm", "runif", "spline", "stepfun",
+           "uniroot", "var")
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 importFrom("gsl", psi)
 importFrom("mgcv", gam, s)
+importFrom("timeDate", kurtosis)
 importFrom(Rcpp, evalCpp)
 
 ### exports ####################################################################
@@ -168,7 +180,6 @@ export(BiDensPlot,
        )
 
 export(gamGPDfit, gamGPDboot, # main 'game'-related tools
-       get.gam.fit, gam.predict, # auxiliary functions
        get.GPD.fit, GPD.predict,
        risk.measure,
        VaRbound)
