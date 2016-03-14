@@ -135,20 +135,17 @@ rGIG <- function(n, lambda, chi, psi, envplot = FALSE, messages = FALSE){
    }
    xsim <- rep(0, n)
    new = n
-   tmp <- .C("rgig",
-             new = as.integer(n),
-             as.double(rpar),
-             as.double(spar),
-             as.double(ppar),
-             as.double(k1),
-             as.double(k2),
-             as.double(lambda),
-             as.double(chi),
-             as.double(psi),
-             as.double(S1),
-             as.double(S2),
-             xsim = as.double(xsim),
-             PACKAGE="QRM")$xsim
+   tmp <- rgig(as.integer(n),
+               as.double(rpar),
+               as.double(spar),
+               as.double(ppar),
+               as.double(k1),
+               as.double(k2),
+               as.double(lambda),
+               as.double(chi),
+               as.double(psi),
+               as.double(S1),
+               as.double(S2))
    if(messages){
      efficiency <- n / new
      message <- paste(message, "Efficiency", round(efficiency * 100, 1),"\n")
