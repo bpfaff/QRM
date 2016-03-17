@@ -74,9 +74,7 @@ r <-returns(idx)
 rp <- series(window(r, "1994-01-01", "2003-12-31"))
 rp <- rp[(rp[, 1] != 0) & (rp[, 2] !=0), ]
 Udata <- apply(rp, 2, edf, adjust = 1)
-copt1 <- fit.tcopula(Udata)
 copt2 <- fit.tcopula(Udata, method = "Kendall")
-
 }
 
 \keyword{distribution}
