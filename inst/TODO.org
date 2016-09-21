@@ -1,0 +1,32 @@
+* Short term
+** TODO document much more, using Roxygen headers
+** TODO fix critical use of switches without stops
+** TODO R files to improve on
+TODO CopulaAC.R
+TODO CopulaGauss.R
+TODO CopulaStudent.R
+TODO Correlations.R
+TODO Credit.R
+TODO Defunct.R
+TODO Gauss.R
+TODO GEV.R
+TODO GHYP.R
+TODO GIG.R
+TODO GPD.R
+DONE Gumbel.R
+TODO NH.R
+TODO PlotFunc.R
+TODO PointProcess.R
+TODO POT.R
+TODO Student.R
+TODO Utility.R
+** TODO put in improved version of QQplot
+** TODO put several R files together
+** TODO improve on .Rd
+** TODO POT.R is a major part but requires much more work => separate figures and computations!
+** TODO Plot functions in POT.R: Explicitly set arguments for internal calls to plot as NULL and provide in function body default values. More freedom for user and passing of ellipsis argument.
+** TODO POT.Rd does not describe any return objects! In particular, fit.GPD()$data contains the exceedances, not the original data (the latter should be renamed to 'x')
+* Mid term
+** TODO update data sets (pointed out by Giovanni 2013-04-12), bring in new ones, use proper data format
+** TODO replace as much as possible concerning copulas by proper function from package 'copula'
+** TODO largely improve on the code quality

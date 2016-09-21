@@ -1,0 +1,185 @@
+## Copyright (C) 2013 Marius Hofert, Bernhard Pfaff
+##
+## This program is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free Software
+## Foundation; either version 3 of the License, or (at your option) any later
+## version.
+##
+## This program is distributed in the hope that it will be useful, but WITHOUT
+## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+## details.
+##
+## You should have received a copy of the GNU General Public License along with
+## this program; if not, see <http://www.gnu.org/licenses/>.
+
+
+useDynLib(QRM)
+
+
+### imports ####################################################################
+
+## import
+import(Matrix)
+import(mvtnorm)
+import(numDeriv)
+import(timeSeries)
+
+## importFrom
+importFrom("graphics", "abline", "axis", "box", "contour", "legend",
+              "mtext", "par", "persp", "title")
+importFrom("methods", "is")
+importFrom("stats", "as.formula", "ave", "cor", "dexp", "dgamma",
+           "dnorm", "dt", "fitted", "integrate", "ks.test",
+           "mahalanobis", "nlminb", "optim", "pchisq", "pexp",
+           "pgamma", "plot.stepfun", "pnorm", "ppoints", "predict",
+           "pt", "qbeta", "qchisq", "qexp", "qnorm", "qt", "rbinom",
+           "rchisq", "rgamma", "rnorm", "runif", "spline", "stepfun",
+           "uniroot", "var")
+importFrom("utils", "setTxtProgressBar", "txtProgressBar")
+importFrom("gsl", psi)
+importFrom("mgcv", gam, s)
+importFrom("timeDate", kurtosis)
+importFrom(Rcpp, evalCpp)
+
+### exports ####################################################################
+
+## S3 methods
+S3method(plot, MPP)
+S3method(plot, PP)
+S3method(plot, sePP)
+
+## exports (a bit of 'grouping' wouldn't harm here)
+export(BiDensPlot,
+       cal.beta,
+       cal.claytonmix,
+       cal.probitnorm,
+       dclaytonmix,
+       dcopula.AC,
+       dcopula.clayton,
+       dcopula.gauss,
+       dcopula.gumbel,
+       dcopula.t,
+       dGPD,
+       dGEV,
+       dghyp,
+       dghypB,
+       dGumbel,
+       dmghyp,
+       dmnorm,
+       dmt,
+       dprobitnorm,
+       dsmghyp,
+       edf,
+       eigenmeth,
+       EGIG,
+       ElogGIG,
+       EMupdate,
+       equicorr,
+       ESnorm,
+       ESst,
+       extremalPP,
+       findthreshold,
+       fit.AC,
+       fit.binomial,
+       fit.binomialBeta,
+       fit.binomialLogitnorm,
+       fit.binomialProbitnorm,
+       fit.gausscopula,
+       fit.GEV,
+       fit.GPD,
+       fit.mNH,
+       fit.mst,
+       fit.NH,
+       fit.norm,
+       fit.POT,
+       fit.seMPP,
+       fit.sePP,
+       fit.st,
+       fit.tcopula,
+       hill,
+       hillPlot,
+       jointnormalTest,
+       Kendall,
+       MardiaTest,
+       MCECM.Qfunc,
+       MCECMupdate,
+       MEplot,
+       momest,
+       Pconstruct,
+       Pdeconstruct,
+       pGEV,
+       pGPD,
+       pGumbel,
+       plotFittedGPDvsEmpiricalExcesses,
+       plot.MPP,
+       plot.PP,
+       plot.sePP,
+       plotTail,
+       pclaytonmix,
+       pprobitnorm,
+       qGEV,
+       qGPD,
+       qGumbel,
+       QQplot,
+       qst,
+       RiskMeasures,
+       rAC,
+       rACp,
+       rBB9Mix,
+       rbinomial.mixture,
+       rcopula.clayton,
+       rcopula.frank,
+       rcopula.gauss,
+       rcopula.Gumbel2Gp,
+       rcopula.GumbelNested,
+       rcopula.gumbel,
+       rcopula.t,
+       rFrankMix,
+       rGEV,
+       rghyp,
+       rghypB,
+       rGumbel,
+       rclaytonmix,
+       rlogitnorm,
+       rprobitnorm,
+       rstable,
+       rtcopulamix,
+       rGIG,
+       rGPD,
+       rmghyp,
+       rmnorm,
+       rmt,
+       seMPP.negloglik,
+       sePP.negloglik,
+       showRM,
+       Spearman,
+       stationary.sePP,
+       unmark,
+       volfunction,
+       xiplot,
+## Export of defunct functions in QRMlib
+       mk.returns,
+       aggregateMonthlySeries,
+       aggregateQuarterlySeries,
+       aggregateSignalSeries,
+       aggregateWeeklySeries,
+       ConvertDFToTimeSeries,
+       plotMultiTS,
+       signalSeries,
+       symmetrize,
+       hessb,
+       fit.Archcopula2d,
+       besselM3,
+       psifunc,
+       kurtosisSPlus,
+       fit.tcopula.rank,
+       fit.GPDb,
+       lbeta,
+       CovToCor
+       )
+
+export(gamGPDfit, gamGPDboot, # main 'game'-related tools
+       get.GPD.fit, GPD.predict,
+       risk.measure,
+       VaRbound)
